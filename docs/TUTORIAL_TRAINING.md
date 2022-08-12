@@ -15,6 +15,13 @@ This GitHub repository bundles reusable code and provides the creation of a MLOp
 
 This guide will show you how to use the XGBoost template from this GitHub repository & quickly run an end-to-end Vertex ML Training Pipeline on the public **Chicago Taxi dataset**.
 
+This guide is relevant for Machine Learning Engineers & Data Scientists who are looking to productionize their ready models
+
+The entire guide is broken down into the following 3 high-level sections:
+- **Setup**
+- **Understanding the Pipeline**
+- **Productionizing an example use case**
+
 **Pre-requisites**:
 - You have a Google Cloud Platform account + Google project
 - You have enabled the following API's for this GCP project
@@ -24,6 +31,14 @@ This guide will show you how to use the XGBoost template from this GitHub reposi
 
 **Time to complete**: <walkthrough-tutorial-duration duration="45"></walkthrough-tutorial-duration>
 
+
+## Section 1 - Setup
+
+Let's complete basic setup requirements around:
+- Project setup
+- Python package installation
+
+before understanding the pipeline & actually productionizing an example use case
 
 ## Project Setup
 
@@ -39,6 +54,7 @@ Set this project in your cloud shell with the following command:
 gcloud config set project <walkthrough-project-name/>
 ```
 
+<walkthrough-footnote>Section 1/3 - Setup</walkthrough-footnote>
 
 ## Package Installation
 
@@ -57,6 +73,17 @@ export PATH="$HOME/.local/bin:$PATH"
 pipenv --python /usr/bin/python3.9 install --skip-lock
 ```
 
+<walkthrough-footnote>Section 1/3 - Setup</walkthrough-footnote>
+
+
+## Section 2 - Understanding the Pipeline
+
+Now that required setup is complete, let's understand the training pipeline & components in detail.
+
+The following portions will deep-dive into explanations of these components, how they fit into each other & code snippets for a better understanding 
+
+Once we understand the pipeline, we can take an example use case & actually productionize it as part of this guide
+
 
 ## Training pipeline - Overview
 
@@ -69,6 +96,8 @@ Let's open the
 - **Model Training**
 - **Model Evaluation**
 - **Model Deployment**: *Champion-Challenger Approach*
+
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 
 ## SQL Queries in BigQuery - Overview
@@ -98,6 +127,7 @@ BigQuery is leveraged for this data processing with SQL queries in 3 stages:
 Now that we understand how BigQuery is used in the training pipeline, click on **Next** to find out how to configure pipeline components for the same! 
 
 <walkthrough-footnote>SQL Queries in BigQuery 1/2</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## SQL Queries in BigQuery - Pipeline Configuration
 
@@ -141,6 +171,7 @@ SQL Queries are added to components in the pipeline in 3 steps:
     ```
 
 <walkthrough-footnote>SQL Queries in BigQuery 2/2</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Overview
 
@@ -152,6 +183,7 @@ TFDV is leveraged in the training pipeline in 3 key ways:
 3. Validate data for any **anomalies** & flag them 
 
 <walkthrough-footnote>TFDV 1/4</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Generate Statistics
 
@@ -178,6 +210,7 @@ use_dataflow=True
 ```
 
 <walkthrough-footnote>TFDV 2/4</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Visualize Statistics
 
@@ -200,6 +233,7 @@ Some cool things included in this interactive view are:
 - Many others....
 
 <walkthrough-footnote>TFDV 3/4</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Show Anomalies
 
@@ -230,6 +264,7 @@ An anomaly can be flagged for the following reasons:
 You can always finetune the TFDV schema to ensure data quality checks match your requirements
 
 <walkthrough-footnote>TFDV 4/4</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Model Training - Overview
 
@@ -246,6 +281,7 @@ Model training is captured in the training pipeline in 2 aspects:
     Once your training code is updated, the component just needs to be called in the pipeline file
 
 <walkthrough-footnote>Model Training 1/3</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Model Training - Component
 
@@ -283,6 +319,7 @@ pipeline = Pipeline(
 This model training code can be modified as per use-case requirements
 
 <walkthrough-footnote>Model Training 2/3</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Model Training - Pipeline Addition
 
@@ -322,6 +359,7 @@ Now that the model training code/component is ready for use, you can call this c
 This component will take training & validation data *(in Cloud Storage)* as input & execute a model training job on Vertex AI
 
 <walkthrough-footnote>Model Training 3/3</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Model Evaluation - Overview
 
@@ -352,6 +390,7 @@ eval_metrics = calculate_eval_metrics(
 Model Evaluation is done using TensorFlow Model Analysis (TFMA) which is framework-agnostic.
 
 <walkthrough-footnote>Model Evaluation 1/2</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Model Evaluation - TFMA Features
 
@@ -388,6 +427,7 @@ where:
 - **Option 3** computes metrics when *payment_type=Cash* for every distinct value of *company*
 
 <walkthrough-footnote>Model Evaluation 2/2</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Model Deployment - Champion-Challenger Approach
 
@@ -405,6 +445,7 @@ This approach works in 5 stages:
 For more details on implementation of these stages in the pipeline, click on **Next**! 
 
 <walkthrough-footnote>Model Deployment 1/3</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Model Deployment - Compare Champion vs Challenger models
 
@@ -429,6 +470,7 @@ If **Mean Squared Error** for the challenger model has improved/dropped by 0.1, 
 Similarly, for a classification problem, you can compare on a metric like **AUC** where increase in the metric by a threshold can lead to model deployment
 
 <walkthrough-footnote>Model Deployment 2/3</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Model Deployment - Upload model to Vertex AI
 
@@ -450,6 +492,15 @@ You can change the *serving_container_image* depending on the template used.
 For this tutorial, since we are running the training pipeline for a *scikit-learn pipeline* with an *XGBoost model*, the serving container used is Google's pre-built image for `scikit-learn`
 
 <walkthrough-footnote>Model Deployment 3/3</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+
+
+## Section 3 - Productionizing an example use case
+
+Now that we understand the pipeline, it's components & the code behind it, lets take an example use case for productionization, make some configuration changes, and see the Vertex Pipeline in action!
+
+Click next to make the configuration changes & submit a pipeline along with this guide!
+
 
 ## Customize Training Config - Overview
 
@@ -471,6 +522,7 @@ These steps include:
     You can rename, view and modify this bash file <walkthrough-editor-open-file filePath="env.sh.example">Environment Variables</walkthrough-editor-open-file>
 
 <walkthrough-footnote>Customize Training Config 1/3</walkthrough-footnote>
+<walkthrough-footnote>Section 3/3 - Productionizing an example use case</walkthrough-footnote>
 
 
 ## Customize Training Config - Payload
@@ -494,6 +546,7 @@ Let's open the file for
 ```
 
 <walkthrough-footnote>Customize Training Config 2/3</walkthrough-footnote>
+<walkthrough-footnote>Section 3/3 - Productionizing an example use case</walkthrough-footnote>
 
 
 ## Customize Training Config - `env.sh`
@@ -513,6 +566,7 @@ export VERTEX_SA_EMAIL=Your Vertex Service account email ID (can use the default
 ```
 
 <walkthrough-footnote>Customize Training Config 3/3</walkthrough-footnote>
+<walkthrough-footnote>Section 3/3 - Productionizing an example use case</walkthrough-footnote>
 
 
 ## Run Training pipeline on Vertex
@@ -521,6 +575,8 @@ Now that the pipeline + configuration is all set up for execution, you can run t
 ```sh
 make run pipeline=training
 ```
+
+<walkthrough-footnote>Section 3/3 - Productionizing an example use case</walkthrough-footnote>
 
 
 ## Congratulations

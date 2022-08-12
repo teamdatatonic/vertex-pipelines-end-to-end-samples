@@ -15,6 +15,13 @@ This GitHub repository bundles reusable code and provides the creation of a MLOp
 
 This guide will show you how to use the XGBoost template from this GitHub repository & quickly run an end-to-end Vertex ML Prediction Pipeline on the public **Chicago Taxi dataset**.
 
+This guide is relevant for Machine Learning Engineers & Data Scientists who are looking to productionize their ready models
+
+The entire guide is broken down into the following 3 high-level sections:
+- **Setup**
+- **Understanding the Pipeline**
+- **Productionizing an example use case**
+
 **Pre-requisites**:
 
 - You have a Google Cloud Platform account + Google project
@@ -25,6 +32,15 @@ This guide will show you how to use the XGBoost template from this GitHub reposi
 - You have run a Vertex Training pipeline from the previous tutorial
 
 **Time to complete**: <walkthrough-tutorial-duration duration="45"></walkthrough-tutorial-duration>
+
+
+## Section 1 - Setup
+
+Let's complete basic setup requirements around:
+- Project setup
+- Python package installation
+
+before understanding the pipeline & actually productionizing an example use case
 
 
 ## Project Setup
@@ -40,6 +56,8 @@ Set this project in your cloud shell with the following command:
 ```sh
 gcloud config set project <walkthrough-project-name/>
 ```
+
+<walkthrough-footnote>Section 1/3 - Setup</walkthrough-footnote>
 
 
 ## Package Installation
@@ -59,6 +77,17 @@ export PATH="$HOME/.local/bin:$PATH"
 pipenv --python /usr/bin/python3.9 install --skip-lock
 ```
 
+<walkthrough-footnote>Section 1/3 - Setup</walkthrough-footnote>
+
+
+## Section 2 - Understanding the Pipeline
+
+Now that required setup is complete, let's understand the training pipeline & components in detail.
+
+The following portions will deep-dive into explanations of these components, how they fit into each other & code snippets for a better understanding 
+
+Once we understand the pipeline, we can take an example use case & actually productionize it as part of this guide
+
 
 ## Prediction Pipeline - Overview
 
@@ -70,6 +99,8 @@ Let's open the
 - **Tensorflow Data Validation**
 - **Batch Prediction**
 
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+
 
 ## SQL Queries in BigQuery - Overview
 
@@ -80,6 +111,7 @@ BigQuery is leveraged for this data preparation/ processing with a SQL query. Th
 For more details on how this SQL query can be configured as a component in the pipeline, click on **Next**!
 
 <walkthrough-footnote>SQL Queries in BigQuery 1/2</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## SQL Queries in BigQuery - Pipeline Configuration
 
@@ -122,6 +154,7 @@ SQL Queries are added to components in the pipeline in 3 steps:
     ```
 
 <walkthrough-footnote>SQL Queries in BigQuery 2/2</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 
 ## Tensorflow Data Validation - Overview
@@ -136,6 +169,7 @@ TFDV is leveraged in the prediction pipeline in 3 key ways:
     - Flag any other **data anomalies**
 
 <walkthrough-footnote>TFDV 1/4</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Generate Statistics
 
@@ -162,6 +196,7 @@ use_dataflow=True
 ```
 
 <walkthrough-footnote>TFDV 2/4</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Visualize Statistics
 
@@ -184,6 +219,7 @@ Some cool things included in this interactive view are:
 - Many others....
 
 <walkthrough-footnote>TFDV 3/4</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Show Anomalies
 
@@ -218,6 +254,7 @@ An anomaly can be flagged for the following reasons:
 You can always finetune the TFDV schema to ensure data quality checks match your requirements
 
 <walkthrough-footnote>TFDV 4/4</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
 
 
 ## Batch Prediction
@@ -250,6 +287,15 @@ batch_prediction = (
 You can flexibly configure the machine configuration for this batch prediction job to truly unlock the power of horizontal scalability in Vertex
 
 <walkthrough-footnote>Batch Prediction 1/1</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+
+
+## Section 3 - Productionizing an example use case
+
+Now that we understand the pipeline, it's components & the code behind it, lets take an example use case for productionization, make some configuration changes, and see the Vertex Pipeline in action!
+
+Click next to make the configuration changes & submit a pipeline along with this guide!
+
 
 ## Customize Prediction Config - Overview
 
@@ -271,6 +317,7 @@ These steps include:
     You can rename, view and modify this bash file <walkthrough-editor-open-file filePath="env.sh.example">Environment Variables</walkthrough-editor-open-file>
 
 <walkthrough-footnote>Customize Prediction Config 1/3</walkthrough-footnote>
+<walkthrough-footnote>Section 3/3 - Productionizing an example use case</walkthrough-footnote>
 
 
 ## Customize Prediction Config - Payload
@@ -294,6 +341,7 @@ Let's open the file for
 ```
 
 <walkthrough-footnote>Customize Prediction Config 2/3</walkthrough-footnote>
+<walkthrough-footnote>Section 3/3 - Productionizing an example use case</walkthrough-footnote>
 
 
 ## Customize Prediction Config - `env.sh`
@@ -313,6 +361,7 @@ export VERTEX_SA_EMAIL=Your Vertex Service account email ID (can use the default
 ```
 
 <walkthrough-footnote>Customize Prediction Config 3/3</walkthrough-footnote>
+<walkthrough-footnote>Section 3/3 - Productionizing an example use case</walkthrough-footnote>
 
 
 ## Run Prediction pipeline on Vertex
@@ -321,6 +370,8 @@ Now that the pipeline + configuration is all set up for execution, you can run t
 ```sh
 make run pipeline=prediction
 ```
+
+<walkthrough-footnote>Section 3/3 - Productionizing an example use case</walkthrough-footnote>
 
 
 ## Congratulations
