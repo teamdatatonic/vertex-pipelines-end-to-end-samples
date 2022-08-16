@@ -28,6 +28,7 @@ Please explain how you have tested the new changes.
 - [ ] I have added tests that prove my fix is effective or that my feature works
 - [ ] New and existing unit tests pass locally with my changes
 - [ ] I have updated any relevant documentation to reflect my changes
+- [ ] I have updated the cloud shell tutorial/s for training + prediction pipelines in `docs/TUTORIAL_*.md` to reflect my changes (if applicable)
 - [ ] I have assigned a reviewer and messaged them
 
 # Pipeline run links:
