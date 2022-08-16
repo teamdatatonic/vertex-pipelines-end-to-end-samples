@@ -74,7 +74,7 @@ Click "Open in Cloud Shell" for a tutorial on how to get started with Vertex Pip
 
 [![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/teamdatatonic/vertex-pipelines-end-to-end-samples&cloudshell_git_branch=tutorial/cloud-shell-train-predict-pl&cloudshell_workspace=.&open_in_editor=README.md&tutorial=docs/TUTORIAL_TRAINING.md)
 
-**OR**
+followed by
 
 2. Building a **Prediction pipeline**
 

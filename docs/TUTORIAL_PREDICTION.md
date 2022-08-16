@@ -91,8 +91,7 @@ Once we understand the pipeline, we can take an example use case & actually prod
 
 ## Prediction Pipeline - Overview
 
-Let's open the
-<walkthrough-editor-open-file filePath="pipelines/xgboost/prediction/pipeline.py">XGBoost Prediction Pipeline</walkthrough-editor-open-file>
+Let's open the <walkthrough-editor-open-file filePath="pipelines/xgboost/prediction/pipeline.py">XGBoost Prediction Pipeline</walkthrough-editor-open-file>
 
 & walk through the following 3 building blocks of this Vertex Prediction pipeline:
 - **SQL Queries in BigQuery**
@@ -322,9 +321,9 @@ These steps include:
 
 ## Customize Prediction Config - Payload
 
-Let's open the file for
-<walkthrough-editor-open-file filePath="pipelines/xgboost/prediction/payloads/dev.json">XGBoost Prediction Pipeline Payload</walkthrough-editor-open-file>
-& update the following values:
+We now need to actually edit files & update configurations to run a Vertex pipeline.
+
+For that purpose, let's open the file for <walkthrough-editor-open-file filePath="pipelines/xgboost/prediction/payloads/dev.json">XGBoost Prediction Pipeline Payload</walkthrough-editor-open-file> & update the following values:
 
 ```json
 "data": {
@@ -346,9 +345,9 @@ Let's open the file for
 
 ## Customize Prediction Config - `env.sh`
 
-Let's rename the file `env.sh.example` to `env.sh` (in the base folder), open the file
-<walkthrough-editor-open-file filePath="env.sh">Environment Variables</walkthrough-editor-open-file>
-& update the following values:
+Similar to editing the payload file, we now need to edit environment variables before running the Vertex pipeline.
+
+For that purpose, let's rename the file `env.sh.example` to `env.sh` (in the base folder), open the renamed file <walkthrough-editor-open-file filePath="env.sh">Environment Variables</walkthrough-editor-open-file> & update the following values:
 
 ```sh 
 export PAYLOAD=dev.json
@@ -366,7 +365,7 @@ export VERTEX_SA_EMAIL=Your Vertex Service account email ID (can use the default
 
 ## Run Prediction pipeline on Vertex
 
-Now that the pipeline + configuration is all set up for execution, you can run the prediction pipeline on Vertex with a single command:
+Now that the pipeline + configuration is all set up for execution, you need to submit the prediction pipeline needs on Vertex AI by executing the following single command:
 ```sh
 make run pipeline=prediction
 ```

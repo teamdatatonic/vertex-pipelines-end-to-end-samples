@@ -87,8 +87,7 @@ Once we understand the pipeline, we can take an example use case & actually prod
 
 ## Training pipeline - Overview
 
-Let's open the
-<walkthrough-editor-open-file filePath="pipelines/xgboost/training/pipeline.py">XGBoost Training Pipeline</walkthrough-editor-open-file>
+Let's open the <walkthrough-editor-open-file filePath="pipelines/xgboost/training/pipeline.py">XGBoost Training Pipeline</walkthrough-editor-open-file>
 
 & walk through the following 5 building blocks of this Vertex Training pipeline:
 - **SQL Queries in BigQuery**
@@ -527,9 +526,9 @@ These steps include:
 
 ## Customize Training Config - Payload
 
-Let's open the file for
-<walkthrough-editor-open-file filePath="pipelines/xgboost/training/payloads/dev.json">XGBoost Training Pipeline Payload</walkthrough-editor-open-file>
-& update the following values:
+We now need to actually edit files & update configurations to run a Vertex pipeline.
+
+For that purpose, let's open the file for <walkthrough-editor-open-file filePath="pipelines/xgboost/training/payloads/dev.json">XGBoost Training Pipeline Payload</walkthrough-editor-open-file> & update the following values:
 
 ```json
 "data": {
@@ -551,9 +550,9 @@ Let's open the file for
 
 ## Customize Training Config - `env.sh`
 
-Let's rename the file `env.sh.example` to `env.sh` (in the base folder), open the file
-<walkthrough-editor-open-file filePath="env.sh">Environment Variables</walkthrough-editor-open-file>
-& update the following values:
+Similar to editing the payload file, we now need to edit environment variables before running the Vertex pipeline.
+
+For that purpose, let's rename the file `env.sh.example` to `env.sh` (in the base folder), open the renamed file <walkthrough-editor-open-file filePath="env.sh">Environment Variables</walkthrough-editor-open-file> & update the following values:
 
 ```sh 
 export PAYLOAD=dev.json
@@ -571,7 +570,7 @@ export VERTEX_SA_EMAIL=Your Vertex Service account email ID (can use the default
 
 ## Run Training pipeline on Vertex
 
-Now that the pipeline + configuration is all set up for execution, you can run the training pipeline on Vertex with a single command:
+Now that the pipeline + configuration is all set up for execution, you need to submit the training pipeline needs on Vertex AI by executing the following single command:
 ```sh
 make run pipeline=training
 ```
