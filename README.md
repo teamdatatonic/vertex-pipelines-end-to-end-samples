@@ -67,18 +67,16 @@ a one-time manual copy of this dataset to your project location using the [BigQu
 
 ### Hands-on Tutorials
 
-**TODO:** Update cloudshell_git_repo from teamdatatonic to GoogleCloudPlatform X 2 + cloudshell_git_branch to main X 2
-
 Click "Open in Cloud Shell" for a tutorial on how to get started with Vertex Pipeline Templates for
 1. Building a **Training pipeline**
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/teamdatatonic/vertex-pipelines-end-to-end-samples&cloudshell_git_branch=tutorial/cloud-shell-train-predict-pl&cloudshell_workspace=.&open_in_editor=README.md&tutorial=docs/TUTORIAL_TRAINING.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/teamdatatonic/vertex-pipelines-end-to-end-samples&cloudshell_git_branch=dev&cloudshell_workspace=.&open_in_editor=README.md&tutorial=docs/TUTORIAL_TRAINING.md)
 
 followed by
 
 2. Building a **Prediction pipeline**
 
-[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/teamdatatonic/vertex-pipelines-end-to-end-samples&cloudshell_git_branch=tutorial/cloud-shell-train-predict-pl&cloudshell_workspace=.&open_in_editor=README.md&tutorial=docs/TUTORIAL_PREDICTION.md)
+[![Open in Cloud Shell](https://gstatic.com/cloudssh/images/open-btn.svg)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/teamdatatonic/vertex-pipelines-end-to-end-samples&cloudshell_git_branch=dev&cloudshell_workspace=.&open_in_editor=README.md&tutorial=docs/TUTORIAL_PREDICTION.md)
 
 *PS - A new model needs to be deployed to Vertex via the training pipeline before running a prediction pipeline*
 
