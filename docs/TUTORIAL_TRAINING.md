@@ -19,7 +19,7 @@ This guide is relevant for Machine Learning Engineers & Data Scientists who are 
 
 The entire guide is broken down into the following 3 high-level sections:
 - **Setup**
-- **Understanding the Pipeline**
+- **Understanding the pipeline**
 - **Productionizing an example use case**
 
 **Pre-requisites**:
@@ -76,7 +76,7 @@ pipenv --python /usr/bin/python3.9 install --skip-lock
 <walkthrough-footnote>Section 1/3 - Setup</walkthrough-footnote>
 
 
-## Section 2 - Understanding the Pipeline
+## Section 2 - Understanding the pipeline
 
 Now that required setup is complete, let's understand the training pipeline & components in detail.
 
@@ -96,7 +96,7 @@ Let's open the <walkthrough-editor-open-file filePath="pipelines/xgboost/trainin
 - **Model Evaluation**
 - **Model Deployment**: *Champion-Challenger Approach*
 
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 
 ## SQL Queries in BigQuery - Overview
@@ -126,7 +126,7 @@ BigQuery is leveraged for this data processing with SQL queries in 3 stages:
 Now that we understand how BigQuery is used in the training pipeline, click on **Next** to find out how to configure pipeline components for the same! 
 
 <walkthrough-footnote>SQL Queries in BigQuery 1/2</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## SQL Queries in BigQuery - Pipeline Configuration
 
@@ -170,7 +170,7 @@ SQL Queries are added to components in the pipeline in 3 steps:
     ```
 
 <walkthrough-footnote>SQL Queries in BigQuery 2/2</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Overview
 
@@ -182,7 +182,7 @@ TFDV is leveraged in the training pipeline in 3 key ways:
 3. Validate data for any **anomalies** & flag them 
 
 <walkthrough-footnote>TFDV 1/4</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Generate Statistics
 
@@ -209,7 +209,7 @@ use_dataflow=True
 ```
 
 <walkthrough-footnote>TFDV 2/4</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Visualize Statistics
 
@@ -232,7 +232,7 @@ Some cool things included in this interactive view are:
 - Many others....
 
 <walkthrough-footnote>TFDV 3/4</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Show Anomalies
 
@@ -263,7 +263,7 @@ An anomaly can be flagged for the following reasons:
 You can always finetune the TFDV schema to ensure data quality checks match your requirements
 
 <walkthrough-footnote>TFDV 4/4</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Model Training - Overview
 
@@ -280,7 +280,7 @@ Model training is captured in the training pipeline in 2 aspects:
     Once your training code is updated, the component just needs to be called in the pipeline file
 
 <walkthrough-footnote>Model Training 1/3</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Model Training - Component
 
@@ -318,7 +318,7 @@ pipeline = Pipeline(
 This model training code can be modified as per use-case requirements
 
 <walkthrough-footnote>Model Training 2/3</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Model Training - Pipeline Addition
 
@@ -358,7 +358,7 @@ Now that the model training code/component is ready for use, you can call this c
 This component will take training & validation data *(in Cloud Storage)* as input & execute a model training job on Vertex AI
 
 <walkthrough-footnote>Model Training 3/3</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Model Evaluation - Overview
 
@@ -389,7 +389,7 @@ eval_metrics = calculate_eval_metrics(
 Model Evaluation is done using TensorFlow Model Analysis (TFMA) which is framework-agnostic.
 
 <walkthrough-footnote>Model Evaluation 1/2</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Model Evaluation - TFMA Features
 
@@ -426,7 +426,7 @@ where:
 - **Option 3** computes metrics when *payment_type=Cash* for every distinct value of *company*
 
 <walkthrough-footnote>Model Evaluation 2/2</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Model Deployment - Champion-Challenger Approach
 
@@ -444,7 +444,7 @@ This approach works in 5 stages:
 For more details on implementation of these stages in the pipeline, click on **Next**! 
 
 <walkthrough-footnote>Model Deployment 1/3</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Model Deployment - Compare Champion vs Challenger models
 
@@ -469,7 +469,7 @@ If **Mean Squared Error** for the challenger model has improved/dropped by 0.1, 
 Similarly, for a classification problem, you can compare on a metric like **AUC** where increase in the metric by a threshold can lead to model deployment
 
 <walkthrough-footnote>Model Deployment 2/3</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Model Deployment - Upload model to Vertex AI
 
@@ -491,7 +491,7 @@ You can change the *serving_container_image* depending on the template used.
 For this tutorial, since we are running the training pipeline for a *scikit-learn pipeline* with an *XGBoost model*, the serving container used is Google's pre-built image for `scikit-learn`
 
 <walkthrough-footnote>Model Deployment 3/3</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 
 ## Section 3 - Productionizing an example use case

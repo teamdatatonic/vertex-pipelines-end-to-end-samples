@@ -19,7 +19,7 @@ This guide is relevant for Machine Learning Engineers & Data Scientists who are 
 
 The entire guide is broken down into the following 3 high-level sections:
 - **Setup**
-- **Understanding the Pipeline**
+- **Understanding the pipeline**
 - **Productionizing an example use case**
 
 **Pre-requisites**:
@@ -80,7 +80,7 @@ pipenv --python /usr/bin/python3.9 install --skip-lock
 <walkthrough-footnote>Section 1/3 - Setup</walkthrough-footnote>
 
 
-## Section 2 - Understanding the Pipeline
+## Section 2 - Understanding the pipeline
 
 Now that required setup is complete, let's understand the training pipeline & components in detail.
 
@@ -98,7 +98,7 @@ Let's open the <walkthrough-editor-open-file filePath="pipelines/xgboost/predict
 - **Tensorflow Data Validation**
 - **Batch Prediction**
 
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 
 ## SQL Queries in BigQuery - Overview
@@ -110,7 +110,7 @@ BigQuery is leveraged for this data preparation/ processing with a SQL query. Th
 For more details on how this SQL query can be configured as a component in the pipeline, click on **Next**!
 
 <walkthrough-footnote>SQL Queries in BigQuery 1/2</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## SQL Queries in BigQuery - Pipeline Configuration
 
@@ -153,7 +153,7 @@ SQL Queries are added to components in the pipeline in 3 steps:
     ```
 
 <walkthrough-footnote>SQL Queries in BigQuery 2/2</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 
 ## Tensorflow Data Validation - Overview
@@ -168,7 +168,7 @@ TFDV is leveraged in the prediction pipeline in 3 key ways:
     - Flag any other **data anomalies**
 
 <walkthrough-footnote>TFDV 1/4</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Generate Statistics
 
@@ -195,7 +195,7 @@ use_dataflow=True
 ```
 
 <walkthrough-footnote>TFDV 2/4</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Visualize Statistics
 
@@ -218,7 +218,7 @@ Some cool things included in this interactive view are:
 - Many others....
 
 <walkthrough-footnote>TFDV 3/4</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 ## Tensorflow Data Validation - Show Anomalies
 
@@ -253,7 +253,7 @@ An anomaly can be flagged for the following reasons:
 You can always finetune the TFDV schema to ensure data quality checks match your requirements
 
 <walkthrough-footnote>TFDV 4/4</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 
 ## Batch Prediction
@@ -286,7 +286,7 @@ batch_prediction = (
 You can flexibly configure the machine configuration for this batch prediction job to truly unlock the power of horizontal scalability in Vertex
 
 <walkthrough-footnote>Batch Prediction 1/1</walkthrough-footnote>
-<walkthrough-footnote>Section 2/3 - Understanding the Pipeline</walkthrough-footnote>
+<walkthrough-footnote>Section 2/3 - Understanding the pipeline</walkthrough-footnote>
 
 
 ## Section 3 - Productionizing an example use case
