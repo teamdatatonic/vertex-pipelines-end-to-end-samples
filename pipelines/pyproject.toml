@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "pipelines"
+version = "0.1.0"
+description = ""
+authors = ["Jonny Browning <jonathan.browning@datatonic.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+kfp = "^1.8.13"
+google-cloud-pipeline-components = "^1.0.17"
+google-cloud-aiplatform = "^1.16.1"
+Jinja2 = "^3.1.2"
+pytz = "^2022.2.1"
+pipeline-components = {path = "../pipeline_components", develop = true}
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
