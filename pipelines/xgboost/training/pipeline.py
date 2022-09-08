@@ -120,7 +120,7 @@ def xgboost_pipeline(
         source_table=ingestion_table,
         filter_column=time_column,
         target_column=label_column_name,
-        filter_start_value=time_filter.output,
+        filter_start_value=time_filter.outputs["current_time"],
     )
     split_train_query = generate_query(
         queries_folder / "sample.sql",

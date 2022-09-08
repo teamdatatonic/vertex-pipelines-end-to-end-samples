@@ -1,19 +1,19 @@
 {
     "attributes": { 
-        "enable_caching": "False",
+        "enable_caching": "True",
         "template_path": "training.json"
     },
     "data": {
-        "project_id": "my-sandbox-gcp-project",
-        "project_location": "europe-west4",
-        "pipeline_files_gcs_path": "gs://my-sandbox-bucket/pipelines/my-unique-namespace",
-        "ingestion_project_id": "my-sandbox-gcp-project",
+        "project_id": "dt-harrycai-sandbox-dev",
+        "project_location": "europe-west2",
+        "pipeline_files_gcs_path": "gs://dt-harrycai-sandbox-dev-pipelines/pipelines",
+        "ingestion_project_id": "bigquery-public-data",
         "model_name": "xgboost-with-preprocessing",
-        "model_label": "label_name",
+        "model_label": "dev",
         "tfdv_schema_filename": "tfdv_schema_training.pbtxt",
-        "tfdv_train_stats_path": "gs://my-sandbox-bucket/train_stats/my-unique-namespace/train.stats", 
+        "tfdv_train_stats_path": "gs://dt-harrycai-sandbox-dev-pipelines/train_stats/train.stats", 
         "dataset_id": "preprocessing",
-        "dataset_location": "EU",
+        "dataset_location": "US",
         "ingestion_dataset_id": "chicago_taxi_trips",
         "timestamp": "2021-08-01 00:00:00"
     }
