@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from kfp.v2.dsl import Output, HTML, component
+import yaml
+import kfp
 
 DL_IMAGE_URI = (
     "us-docker.pkg.dev/deeplearning-platform-release/gcr.io/base-cu110:latest"
@@ -43,8 +44,6 @@ def generate_notebook_component_definition(
 from typing import NamedTuple
 from kfp.v2.dsl import Output, HTML, component
 
-
-@component(base_image="{DL_IMAGE_URI}", packages_to_install=["scrapbook==0.5.0"])
 def {component_name}(
     output_notebook: Output[HTML],
     {kwargs_code}
@@ -75,60 +74,67 @@ def {component_name}(
     """
 
 
-@component(base_image=DL_IMAGE_URI, packages_to_install=["scrapbook==0.5.0"])
-def run_notebook(notebook: str, output_notebook: Output[HTML], **kwargs) -> dict:
-    import papermill
-    import nbformat
-    import nbconvert
-    import scrapbook
+def generate_notebook_component(
+    component_name: str,
+    notebook: str,
+    input_parameters: dict,
+    output_parameters: dict,
+):
+    yml_tmpl = f"""
+outputs:
+- name: output_notebook
+  type: HTML
+implementation:
+  container:
+    image: us-docker.pkg.dev/deeplearning-platform-release/gcr.io/base-cu110:latest
+    command:
+    - sh
+    - -c
+    - |
+      if ! [ -x "$(command -v pip)" ]; then
+          python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
+      fi
+      PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location \
+        'scrapbook==0.5.0' 'kfp==1.8.13' && "$0" "$@"
+    - sh
+    - -ec
+    - |
+      program_path=$(mktemp -d)
+      printf "%s" "$0" > "$program_path/ephemeral_component.py"
+      python3 -m kfp.v2.components.executor_main --component_module_path "$program_path/ephemeral_component.py" "$@"
 
-    papermill_output = output_notebook.path.replace(".html", ".ipynb")
+    args:
+    - --executor_input
+    - executorInput: null
+    - --function_to_execute
+    - {component_name}
+"""
+    entrypoint = f"""
+import kfp
+from kfp.v2 import dsl
+from kfp.v2.dsl import *
+from typing import *
+{generate_notebook_component_definition(component_name, notebook, input_parameters, output_parameters)}
+"""
+    component = yaml.safe_load(yml_tmpl)
 
-    try:
-        # execute notebook using papermill
-        papermill.execute_notebook(notebook, papermill_output, parameters=kwargs)
-
-    # no except block; we want errors to be handled by the pipeline runner, and the component to show as failed
-    finally:
-        # read output notebook and export to html
-        with open(papermill_output) as f:
-            nb = nbformat.read(f, as_version=4)
-        html_exporter = nbconvert.HTMLExporter()
-        html_data, resources = html_exporter.from_notebook_node(nb)
-        with open(output_notebook.path, "w") as f:
-            f.write(html_data)
-
-    scraps = scrapbook.read_notebook(papermill_output).scraps
-    return scraps.data_dict
-
-
-if __name__ == "__main__":
-    """
-    I've temporarily made this a python script where I'm generating component definitions for the existing pipelines.
-    TODO: in future, this should be a callable library or CLI, not a python script.
-    """
-    notebook_component_definition = generate_notebook_component_definition(
-        "get_current_time",
-        "gs://dt-harrycai-sandbox-dev-pipelines/pipelines/training/assets/notebooks/get_current_time.ipynb",
-        {"timestamp": str},
-        {"current_time": str},
+    component["inputs"] = [
+        {"name": key, "type": python_type_to_kfp_type(value)}
+        for (key, value) in input_parameters.items()
+    ]
+    component["outputs"].extend(
+        [
+            {"name": key, "type": python_type_to_kfp_type(value)}
+            for (key, value) in output_parameters.items()
+        ]
     )
-    with open("pipelines/kfp_components/aiplatform/get_current_time.py", "w") as f:
-        f.write(notebook_component_definition)
+    component["implementation"]["container"]["command"].append(entrypoint)
 
-    notebook_component_definition = generate_notebook_component_definition(
-        "bq_query_to_table",
-        "gs://dt-harrycai-sandbox-dev-pipelines/pipelines/training/assets/notebooks/query_to_table.ipynb",
-        {
-            "query": str,
-            "bq_client_project_id": str,
-            "destination_project_id": str,
-            "dataset_id": str,
-            "table_id": str,
-            "dataset_location": str,
-            "query_job_config": dict,
-        },
-        {},
-    )
-    with open("pipelines/kfp_components/bigquery/query_to_table.py", "w") as f:
-        f.write(notebook_component_definition)
+    component_yaml = yaml.dump(component)
+    return kfp.components.load_component_from_text(component_yaml)
+
+
+def python_type_to_kfp_type(type: type):
+    if type == str:
+        return "String"
+    return type.__name__
