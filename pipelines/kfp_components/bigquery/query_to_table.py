@@ -1,6 +1,6 @@
-from pipelines.kfp_components.papermill import generate_notebook_component
+from pipelines.kfp_components.notebook_component import notebook_component
 
-bq_query_to_table = generate_notebook_component(
+bq_query_to_table = notebook_component(
     "bq_query_to_table",
     "gs://dt-harrycai-sandbox-dev-pipelines/pipelines/training/assets/notebooks/query_to_table.ipynb",
     input_parameters={

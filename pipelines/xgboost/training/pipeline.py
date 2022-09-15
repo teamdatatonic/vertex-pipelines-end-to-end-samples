@@ -25,10 +25,9 @@ from pipelines.kfp_components.aiplatform import (
     lookup_model,
     export_model,
     upload_model,
-    get_current_time,
 )
 from pipelines.kfp_components.helpers import copy_artifact
-from pipelines.kfp_components.bigquery import extract_bq_to_dataset, bq_query_to_table
+from pipelines.kfp_components.bigquery import extract_bq_to_dataset
 from pipelines.kfp_components.tfdv import (
     show_anomalies,
     validate_schema,
@@ -37,6 +36,7 @@ from pipelines.kfp_components.tfdv import (
 )
 from pipelines.kfp_components.xgboost import train_xgboost_model, predict_xgboost_model
 from pipelines.kfp_components.evaluation import calculate_eval_metrics, compare_models
+from pipelines.kfp_components.notebook_component import notebook_component
 
 
 @dsl.pipeline(name="xgboost-train-pipeline")
@@ -110,6 +110,12 @@ def xgboost_pipeline(
 
     queries_folder = pathlib.Path(__file__).parent / "queries"
 
+    get_current_time = notebook_component(
+        "get_current_time",
+        "gs://dt-harrycai-sandbox-dev-pipelines/pipelines/training/assets/notebooks/get_current_time.ipynb",
+        input_parameters={"timestamp": str},
+        output_parameters={"current_time": str},
+    )
     time_filter = get_current_time(timestamp=timestamp).set_display_name(
         "Get time filter for ingestion query"
     )
@@ -151,6 +157,20 @@ def xgboost_pipeline(
 
     # data ingestion and preprocessing operations
 
+    bq_query_to_table = notebook_component(
+        "bq_query_to_table",
+        "gs://dt-harrycai-sandbox-dev-pipelines/pipelines/training/assets/notebooks/query_to_table.ipynb",
+        input_parameters={
+            "query": str,
+            "bq_client_project_id": str,
+            "destination_project_id": str,
+            "dataset_id": str,
+            "table_id": str,
+            "dataset_location": str,
+            "query_job_config": dict,
+        },
+        output_parameters=dict(),
+    )
     kwargs = dict(
         bq_client_project_id=project_id,
         destination_project_id=project_id,
