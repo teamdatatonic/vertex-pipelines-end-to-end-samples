@@ -24,8 +24,10 @@ DL_IMAGE_URI = (
 def notebook_component(
     component_name: str,
     notebook: str,
-    input_parameters: dict,
-    output_parameters: dict,
+    input_parameters: dict = {},
+    input_artifacts: dict = {},
+    output_parameters: dict = {},
+    output_artifacts: dict = {},
 ):
     """
     A factory function that returns a component that runs a parameterised notebook.
@@ -42,7 +44,12 @@ def notebook_component(
             Eg. {'output_1': str, 'output_2': int}
     """
     return NotebookComponentFactory(
-        component_name, notebook, input_parameters, output_parameters
+        component_name,
+        notebook,
+        input_parameters,
+        input_artifacts,
+        output_parameters,
+        output_artifacts,
     ).create_notebook_component()
 
 
@@ -52,12 +59,19 @@ class NotebookComponentFactory:
         component_name: str,
         notebook: str,
         input_parameters: dict,
+        input_artifacts: dict,
         output_parameters: dict,
+        output_artifacts: dict,
     ):
         self.component_name = component_name
         self.notebook = notebook
         self.input_parameters = input_parameters
+        self.input_artifacts = input_artifacts
         self.output_parameters = output_parameters
+        self.output_artifacts = output_artifacts
+
+        self.inputs = {**self.input_parameters, **self.input_artifacts}
+        self.outputs = {**self.output_parameters, **self.output_artifacts}
 
     def create_notebook_component(self):
         """Creates the notebook component by assembling its yaml definition as a string then loading it."""
@@ -97,12 +111,12 @@ class NotebookComponentFactory:
 
         component["inputs"] = [
             {"name": key, "type": _python_type_to_kfp_type(value)}
-            for (key, value) in self.input_parameters.items()
+            for (key, value) in self.inputs.items()
         ]
         component["outputs"].extend(
             [
                 {"name": key, "type": _python_type_to_kfp_type(value)}
-                for (key, value) in self.output_parameters.items()
+                for (key, value) in self.outputs.items()
             ]
         )
         component["implementation"]["container"]["command"].append(
@@ -114,12 +128,31 @@ class NotebookComponentFactory:
 
     def _get_notebook_component_definition(self):
         """Returns the code for the underlying python function to be run by the notebook component."""
-        kwargs_code = ", ".join(
+        input_parameters_kwargs_code = ", ".join(
             [f"{p}: {self.input_parameters[p].__name__}" for p in self.input_parameters]
-        )
-        pm_parameters_dict = (
-            "{" + ", ".join([f"'{p}': {p}" for p in self.input_parameters]) + "}"
-        )
+        ) + ("," if self.input_parameters else "")
+        input_parameters_code = ", ".join(
+            [f"'{p}': {p}" for p in self.input_parameters]
+        ) + ("," if self.input_parameters else "")
+        input_artifacts_kwargs_code = ", ".join(
+            [
+                f"{p}: Input[{self.input_artifacts[p].__name__}]"
+                for p in self.input_artifacts
+            ]
+        ) + ("," if self.input_artifacts else "")
+        input_artifacts_code = ", ".join(
+            [f"'{p}': {p}.uri" for p in self.input_artifacts]
+        ) + ("," if self.input_artifacts else "")
+        output_artifacts_kwargs_code = ", ".join(
+            [
+                f"{p}: Output[{self.output_artifacts[p].__name__}]"
+                for p in self.output_artifacts
+            ]
+        ) + ("," if self.output_artifacts else "")
+        output_artifacts_code = ", ".join(
+            [f"'{p}_uri': {p}.uri" for p in self.output_artifacts]
+        ) + ("," if self.output_artifacts else "")
+
         outputs = ",".join(
             [
                 f"('{p}', {self.output_parameters[p].__name__})"
@@ -136,11 +169,13 @@ class NotebookComponentFactory:
         return textwrap.dedent(
             f"""\
             from typing import NamedTuple
-            from kfp.v2.dsl import Output, HTML, component
+            from kfp.v2.dsl import *
 
             def {self.component_name}(
                 output_notebook: Output[HTML],
-                {kwargs_code}
+                {input_parameters_kwargs_code}
+                {input_artifacts_kwargs_code}
+                {output_artifacts_kwargs_code}
             ) -> NamedTuple("Outputs", [{outputs}]):
                 import papermill
                 import nbformat
@@ -152,7 +187,11 @@ class NotebookComponentFactory:
                     papermill.execute_notebook(
                         "{self.notebook}",
                         papermill_output,
-                        parameters={pm_parameters_dict}
+                        parameters={{
+                            {input_parameters_code}
+                            {input_artifacts_code}
+                            {output_artifacts_code}
+                        }}
                     )
                 # no except block because we want errors to be handled by the pipeline runner
                 # and the component to show as failed

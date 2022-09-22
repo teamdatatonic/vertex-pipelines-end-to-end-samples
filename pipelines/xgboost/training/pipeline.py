@@ -16,6 +16,7 @@ import json
 import pathlib
 
 from kfp.v2 import compiler, dsl
+from kfp.v2.dsl import Dataset
 from google_cloud_pipeline_components.experimental.custom_job.utils import (
     create_custom_training_job_op_from_component,
 )
@@ -27,7 +28,6 @@ from pipelines.kfp_components.aiplatform import (
     upload_model,
 )
 from pipelines.kfp_components.helpers import copy_artifact
-from pipelines.kfp_components.bigquery import extract_bq_to_dataset
 from pipelines.kfp_components.tfdv import (
     show_anomalies,
     validate_schema,
@@ -184,6 +184,27 @@ def xgboost_pipeline(
 
     # exporting data to GCS from BQ
 
+    extract_bq_to_dataset = notebook_component(
+        "extract_bq_to_dataset",
+        "gs://dt-harrycai-sandbox-dev-pipelines/pipelines/training/assets/notebooks/extract_dataset.ipynb",
+        input_parameters={
+            "bq_client_project_id": str,
+            "source_project_id": str,
+            "dataset_id": str,
+            "table_name": str,
+            "dataset_location": str,
+            "extract_job_config": dict,
+            "file_pattern": str,
+        },
+        output_parameters={
+            "dataset_uri": str,
+            "dataset_directory": str,
+        },
+        output_artifacts={
+            "dataset": Dataset,
+        },
+    )
+
     ingested_dataset = (
         extract_bq_to_dataset(
             bq_client_project_id=project_id,
@@ -191,6 +212,7 @@ def xgboost_pipeline(
             dataset_id=dataset_id,
             table_name=ingested_table,
             dataset_location=dataset_location,
+            extract_job_config={},
             file_pattern=file_pattern,
         )
         .after(ingest)
@@ -260,6 +282,7 @@ def xgboost_pipeline(
             dataset_id=dataset_id,
             table_name=preprocessed_table,
             dataset_location=dataset_location,
+            extract_job_config={},
             file_pattern=file_pattern,
         )
         .after(data_cleaning)
@@ -272,6 +295,7 @@ def xgboost_pipeline(
             dataset_id=dataset_id,
             table_name=valid_table,
             dataset_location=dataset_location,
+            extract_job_config={},
             file_pattern=file_pattern,
         )
         .after(split_valid_data)
@@ -284,6 +308,7 @@ def xgboost_pipeline(
             dataset_id=dataset_id,
             table_name=test_table,
             dataset_location=dataset_location,
+            extract_job_config={},
             file_pattern=file_pattern,
         )
         .after(split_test_data)
