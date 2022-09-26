@@ -16,9 +16,14 @@ import textwrap
 import yaml
 import kfp
 
-DL_IMAGE_URI = (
+DL_IMAGE_URI: str = (
     "us-docker.pkg.dev/deeplearning-platform-release/gcr.io/base-cu110:latest"
 )
+
+BASE_PACKAGES: list = [
+    "kfp==1.8.13",
+    "scrapbook==0.5.0",
+]
 
 
 def notebook_component(
@@ -28,6 +33,8 @@ def notebook_component(
     input_artifacts: dict = {},
     output_parameters: dict = {},
     output_artifacts: dict = {},
+    base_image: str = DL_IMAGE_URI,
+    packages_to_install: list = [],
 ):
     """
     A factory function that returns a component that runs a parameterised notebook.
@@ -50,6 +57,8 @@ def notebook_component(
         input_artifacts,
         output_parameters,
         output_artifacts,
+        base_image,
+        packages_to_install,
     ).create_notebook_component()
 
 
@@ -62,6 +71,8 @@ class NotebookComponentFactory:
         input_artifacts: dict,
         output_parameters: dict,
         output_artifacts: dict,
+        base_image: str,
+        packages_to_install: list,
     ):
         self.component_name = component_name
         self.notebook = notebook
@@ -69,6 +80,8 @@ class NotebookComponentFactory:
         self.input_artifacts = input_artifacts
         self.output_parameters = output_parameters
         self.output_artifacts = output_artifacts
+        self.base_image = base_image
+        self.packages_to_install = BASE_PACKAGES + packages_to_install
 
         self.inputs = {**self.input_parameters, **self.input_artifacts}
         self.outputs = {**self.output_parameters, **self.output_artifacts}
@@ -78,12 +91,13 @@ class NotebookComponentFactory:
         # we start with the following yaml which contains the common attributes of all notebook components
         component_yml = textwrap.dedent(
             f"""\
+            name: {self.component_name.replace('_', ' ').capitalize()}
             outputs:
             - name: output_notebook
               type: HTML
             implementation:
               container:
-                image: {DL_IMAGE_URI}
+                image: {self.base_image}
                 command:
                 - sh
                 - -c
@@ -92,7 +106,7 @@ class NotebookComponentFactory:
                     python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip
                   fi
                   PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location \
-                  'scrapbook==0.5.0' 'kfp==1.8.13' && "$0" "$@"
+                  {self._get_packages_code()} && "$0" "$@"
                 - sh
                 - -ec
                 - |
@@ -126,6 +140,9 @@ class NotebookComponentFactory:
         component_yaml = yaml.dump(component)
         return kfp.components.load_component_from_text(component_yaml)
 
+    def _get_packages_code(self):
+        return " ".join(f"'{p}'" for p in self.packages_to_install)
+
     def _get_notebook_component_definition(self):
         """Returns the code for the underlying python function to be run by the notebook component."""
         input_parameters_kwargs_code = ", ".join(
@@ -141,7 +158,7 @@ class NotebookComponentFactory:
             ]
         ) + ("," if self.input_artifacts else "")
         input_artifacts_code = ", ".join(
-            [f"'{p}': {p}.uri" for p in self.input_artifacts]
+            [f"'{p}_uri': {p}.uri" for p in self.input_artifacts]
         ) + ("," if self.input_artifacts else "")
         output_artifacts_kwargs_code = ", ".join(
             [

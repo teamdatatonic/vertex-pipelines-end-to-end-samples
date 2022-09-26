@@ -238,12 +238,13 @@ def xgboost_pipeline(
     ).set_display_name("Generate data statistics")
     # visualise statistics
     visualised_statistics = visualise_statistics(
-        statistics=gen_statistics.output, statistics_name="Data Statistics"
+        statistics=gen_statistics.outputs["statistics"],
+        statistics_name="Data Statistics",
     ).set_display_name("Visualise data statistics")
 
     # validate data schema
     validated_schema = validate_schema(
-        statistics=gen_statistics.output, schema_path=tfdv_schema_path
+        statistics=gen_statistics.outputs["statistics"], schema_path=tfdv_schema_path
     ).set_display_name("Validate data schema")
     # show anomalies and fail if any anomalies were detected
     anomalies = show_anomalies(
@@ -405,7 +406,8 @@ def xgboost_pipeline(
 
         # Copy training stats to well-known location (to be consumed during prediction)
         copy_artifact(
-            src_artifact=gen_statistics.output, des_uri=tfdv_train_stats_path
+            src_artifact=gen_statistics.outputs["statistics"],
+            des_uri=tfdv_train_stats_path,
         ).set_display_name("Copy train statistics")
 
     with dsl.Condition(
@@ -470,7 +472,8 @@ def xgboost_pipeline(
             # Copy training stats to well-known location
             # (to be consumed during prediction)
             copy_artifact(
-                src_artifact=gen_statistics.output, des_uri=tfdv_train_stats_path
+                src_artifact=gen_statistics.outputs["statistics"],
+                des_uri=tfdv_train_stats_path,
             ).set_display_name("Copy train statistics to GCS for challenger model")
 
 
