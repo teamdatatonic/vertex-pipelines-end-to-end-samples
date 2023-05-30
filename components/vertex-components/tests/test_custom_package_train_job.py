@@ -58,7 +58,9 @@ def test_custom_package_train_job(mock_open, mock_exists, mock_job, tmpdir):
 @mock.patch("google.cloud.aiplatform.CustomPythonPackageTrainingJob")
 @mock.patch("os.path.exists")
 @mock.patch("builtins.open", new_callable=mock.mock_open, read_data="{}")
-def test_custom_package_train_script_not_found(mock_open, mock_exists, mock_job, tmpdir):
+def test_custom_package_train_script_not_found(
+    mock_open, mock_exists, mock_job, tmpdir
+):
     """
     Checks that when the training package is not found
     the method fails
