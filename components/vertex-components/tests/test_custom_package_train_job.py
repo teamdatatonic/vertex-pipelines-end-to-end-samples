@@ -88,3 +88,7 @@ def test_custom_package_train_script_not_found(mock_open, mock_exists, mock_job,
             staging_bucket="gs://my-bucket",
             job_name="my-job",
         )
+
+    # Assert the custom training job is not executed
+    mock_job.assert_not_called()
+    mock_open.assert_not_called()
