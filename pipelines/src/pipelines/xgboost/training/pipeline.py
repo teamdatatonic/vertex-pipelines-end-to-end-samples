@@ -21,9 +21,9 @@ from pipelines import generate_query
 from bigquery_components import extract_bq_to_dataset
 from vertex_components import (
     lookup_model,
-    custom_train_job,
     import_model_evaluation,
     update_best_model,
+    custom_package_train_job,
 )
 
 
@@ -78,7 +78,10 @@ def xgboost_pipeline(
     valid_table = "valid_data" + table_suffix
     test_table = "test_data" + table_suffix
     primary_metric = "rootMeanSquaredError"
-    train_script_uri = f"{pipeline_files_gcs_path}/assets/train_xgb_model.py"
+    python_package_uri = (
+        f"{pipeline_files_gcs_path}/packages/train_xgb_package-0.1.0.tar.gz"
+    )
+    python_module_name = "train_xgb_package.train_xgb_model"
     hparams = dict(
         n_estimators=200,
         early_stopping_rounds=10,
@@ -166,8 +169,9 @@ def xgboost_pipeline(
         .outputs["model_resource_name"]
     )
 
-    train_model = custom_train_job(
-        train_script_uri=train_script_uri,
+    train_model = custom_package_train_job(
+        python_package_uri=python_package_uri,
+        python_module_name=python_module_name,
         train_data=train_dataset,
         valid_data=valid_dataset,
         test_data=test_dataset,
@@ -176,9 +180,8 @@ def xgboost_pipeline(
         model_display_name=model_name,
         train_container_uri="europe-docker.pkg.dev/vertex-ai/training/scikit-learn-cpu.0-23:latest",  # noqa: E501
         serving_container_uri="europe-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.0-24:latest",  # noqa: E501
-        hparams=hparams,
-        requirements=["scikit-learn==0.24.0"],
         staging_bucket=staging_bucket,
+        hparams=hparams,
         parent_model=existing_model,
     ).set_display_name("Train model")
 

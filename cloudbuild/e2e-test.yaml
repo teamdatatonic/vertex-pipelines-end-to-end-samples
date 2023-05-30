@@ -22,8 +22,8 @@ steps:
     args:
       - -c
       - |
-        mkdir -p ${COMMIT_SHA}/assets && \
-        cp -r pipelines/assets ${COMMIT_SHA} && \
+        mkdir -p ${COMMIT_SHA}/packages && \
+        cp pipelines/packages/*/*.tar.gz ${COMMIT_SHA} && \
         gsutil cp -r ${COMMIT_SHA} ${_PIPELINE_PUBLISH_GCS_PATH}/${COMMIT_SHA}
 
   # Install Python deps

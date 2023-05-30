@@ -69,26 +69,42 @@ test-all-components-coverage: ## Run tests with coverage
 		$(MAKE) test-components-coverage GROUP=$$(basename $$component_group) ; \
 	done
 
-sync-assets: ## Sync assets folder to GCS.
-	@if [ -d "./pipelines/assets/" ] ; then \
-		echo "Syncing assets to GCS" && \
-		gsutil -m rsync -r -d ./pipelines/assets ${PIPELINE_FILES_GCS_PATH}/assets ; \
-	else \
-		echo "No assets folder found" ; \
-	fi ;
+build-packages: ## Build Python packages. Remember to deactivate your current virtual environment
+	@for dir in ./pipelines/packages/*; do \
+		if [ -f "$$dir/pyproject.toml" ] ; then \
+			echo "Building Python package in $$dir" && \
+			cd $$dir && \
+			poetry install && poetry build && \
+			cd - ; \
+		else \
+			echo "No pyproject.toml found in $$dir" ; \
+		fi ; \
+	done ;
 
-run: ## Compile pipeline, copy assets to GCS, and run pipeline in sandbox environment. Must specify pipeline=<training|prediction>. Optionally specify enable_pipeline_caching=<true|false> (defaults to default Vertex caching behaviour)
+
+sync-packages: ## Upload packages files to GCS
+	@echo "Uploading .tar.gz files to ${PIPELINE_FILES_GCS_PATH}/packages/"
+	@for dir in ./pipelines/packages/*; do \
+		if [ -d "$$dir/dist" ] ; then \
+			gsutil -m cp $$dir/dist/*.tar.gz ${PIPELINE_FILES_GCS_PATH}/packages/ ; \
+		else \
+			echo "No dist folder found in $$dir" ; \
+		fi ; \
+	done ;
+
+
+run: ## Compile pipeline, copy packages to GCS, and run pipeline in sandbox environment. Must specify pipeline=<training|prediction>. Optionally specify enable_pipeline_caching=<true|false> (defaults to default Vertex caching behaviour)
 	@ $(MAKE) compile-pipeline && \
-	$(MAKE) sync-assets && \
+	$(MAKE) sync-packages && \
 	cd pipelines/src && \
 	pipenv run python -m pipelines.trigger --template_path=./$(pipeline).json --enable_caching=$(enable_pipeline_caching)
 
-sync_assets ?= true
-e2e-tests: ## (Optionally) copy assets to GCS, and perform end-to-end (E2E) pipeline tests. Must specify pipeline=<training|prediction>. Optionally specify enable_pipeline_caching=<true|false> (defaults to default Vertex caching behaviour). Optionally specify sync_assets=<true|false> (defaults to true)
-	@if [ $$sync_assets = true ] ; then \
-        $(MAKE) sync-assets; \
+sync_packages ?= true
+e2e-tests: ## (Optionally) copy packages to GCS, and perform end-to-end (E2E) pipeline tests. Must specify pipeline=<training|prediction>. Optionally specify enable_pipeline_caching=<true|false> (defaults to default Vertex caching behaviour). Optionally specify sync_packages=<true|false> (defaults to true)
+	@if [ $$sync_packages = true ] ; then \
+        $(MAKE) sync-packages; \
 	else \
-		echo "Skipping syncing assets to GCS"; \
+		echo "Skipping syncing packages to GCS"; \
     fi && \
 	cd pipelines && \
 	pipenv run pytest --log-cli-level=INFO tests/${PIPELINE_TEMPLATE}/$(pipeline) --enable_caching=$(enable_pipeline_caching)
