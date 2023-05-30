@@ -23,7 +23,11 @@ steps:
       - -c
       - |
         mkdir -p ${COMMIT_SHA}/packages && \
-        cp pipelines/packages/*/*.tar.gz ${COMMIT_SHA} && \
+        for dir in pipelines/packages/*; do
+            if [ -d "${dir}" ]; then
+                cp "${dir}/dist/"*.tar.gz ${COMMIT_SHA}/packages/
+            fi
+        done && \
         gsutil cp -r ${COMMIT_SHA} ${_PIPELINE_PUBLISH_GCS_PATH}/${COMMIT_SHA}
 
   # Install Python deps

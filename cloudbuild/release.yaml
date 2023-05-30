@@ -34,10 +34,14 @@ steps:
     args:
       - -c
       - |
-        mkdir -p ${TAG_NAME}/assets && \
+        mkdir -p ${TAG_NAME}/packages && \
         cp pipelines/src/training.json ${TAG_NAME}/training.json && \
         cp pipelines/src/prediction.json ${TAG_NAME}/prediction.json && \
-        cp pipelines/packages/*/*.tar.gz ${TAG_NAME}/packages/ && \
+        for dir in pipelines/packages/*; do
+            if [ -d "${dir}" ]; then
+                cp "${dir}/dist/"*.tar.gz ${TAG_NAME}/packages/
+            fi
+        done && \
         for dest in ${_PIPELINE_PUBLISH_GCS_PATHS} ; do \
           gsutil cp -r ${TAG_NAME} $$dest ; \
         done
