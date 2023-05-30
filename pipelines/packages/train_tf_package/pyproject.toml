@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "train-tf-package"
+version = "0.1.0"
+description = ""
+authors = ["ariadnafer <ariadna.fernandez@datatonic.com>"]
+readme = "README.md"
+
+
+[tool.poetry.dependencies]
+python = "3.7.10"
+tensorflow = "2.6.0"
+
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
