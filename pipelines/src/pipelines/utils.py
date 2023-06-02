@@ -1,5 +1,6 @@
 from importlib import import_module
 from pathlib import Path
+from typing import Callable
 
 from kfp.v2 import compiler
 from jinja2 import Template
@@ -25,11 +26,14 @@ def generate_query(file_name: str, folder: Path = None, **replacements) -> str:
     return Template(query_template).render(**replacements)
 
 
-def compile_pipeline(module_name: str, function_name: str = "pipeline"):
+def load_pipeline(module_name: str, function_name: str = "pipeline") -> Callable:
     module = import_module(f"pipelines.pipelines.{module_name}")
-    func = getattr(module, function_name)
+    return getattr(module, function_name)
+
+
+def compile_pipeline(func: Callable, output_file: str):
     compiler.Compiler().compile(
         pipeline_func=func,
-        package_path=f"{module_name}.json",
+        package_path=output_file,
         type_check=False,
     )
