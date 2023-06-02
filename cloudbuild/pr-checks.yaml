@@ -27,7 +27,7 @@ steps:
         git add . && \
         make pre-commit && \
         pipeline=train make compile-pipeline && \
-        pipeline=prediction make compile-pipeline && \
+        pipeline=predict make compile-pipeline && \
         make setup-all-components && \
         make test-all-components
     env:
