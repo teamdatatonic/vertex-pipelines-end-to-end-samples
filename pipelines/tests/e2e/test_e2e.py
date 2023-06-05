@@ -11,30 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import pipelines.configs
 from pipelines.utils import load_pipeline
 from tests.e2e import pipeline_e2e_test
 from os import environ as env
 
 enable_caching = env["enable_caching"].lower() in ["true", "1"]
+config = env["config"]
 pipeline = env["pipeline"]
 
 
 def test_pipeline() -> None:
-    """
-    Tests if pipeline is run successfully
-    Triggers pipeline synchronously.
+    """Tests if pipeline runs successfully by triggering the job synchronously.
     Tests will fail if:
     - Any errors are thrown during execution
     - Any of the expected component outputs are empty (size == 0kb)
-
-    Arguments:
-        None
-
-    Returns:
-        None
     """
+    pipelines.configs.config = config
+    func = load_pipeline(pipeline)
     pipeline_e2e_test(
-        load_pipeline(pipeline),
+        func,
         common_tasks={},
         enable_caching=enable_caching,
     )
