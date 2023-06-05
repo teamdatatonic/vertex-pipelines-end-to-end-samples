@@ -1,12 +1,17 @@
-from os import environ as env
+import logging
 from importlib import import_module
 from types import ModuleType
 
-
-def load_config(template: str = env.get("config")) -> ModuleType:
-    if template is None:
-        raise ValueError("Missing environment variable: config")
-    return import_module(f"pipelines.configs.{template}")
+# set this module-level variable before calling `get_config`
+config = None
 
 
-__all__ = ["load_config"]
+def get_config() -> ModuleType:
+    if config is None:
+        logging.error(f"'config' is not initialised")
+    name = f"pipelines.configs.{config}"
+    logging.debug(f"import config '{name}'")
+    return import_module(name)
+
+
+__all__ = ["config", "get_config"]

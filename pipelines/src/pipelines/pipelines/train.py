@@ -15,7 +15,7 @@ from os import environ as env
 
 from google_cloud_pipeline_components.v1.bigquery import BigqueryQueryJobOp
 from kfp.v2 import dsl
-from pipelines.configs import load_config
+from pipelines.configs import get_config
 from pipelines.utils import generate_query
 from bigquery_components import extract_bq_to_dataset
 from vertex_components import (
@@ -25,7 +25,7 @@ from vertex_components import (
     update_best_model,
 )
 
-config = load_config()
+config = get_config()
 
 
 @dsl.pipeline(name=config.train_pipeline_name)

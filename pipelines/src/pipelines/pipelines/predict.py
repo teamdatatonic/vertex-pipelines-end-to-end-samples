@@ -18,10 +18,10 @@ from google_cloud_pipeline_components.v1.bigquery import BigqueryQueryJobOp
 from kfp.v2 import dsl
 
 from pipelines.utils import generate_query
-from pipelines.configs import load_config
+from pipelines.configs import get_config
 from vertex_components import lookup_model, model_batch_predict
 
-config = load_config()
+config = get_config()
 
 
 @dsl.pipeline(name=config.predict_pipeline_name)
