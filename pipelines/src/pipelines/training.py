@@ -186,6 +186,6 @@ def pipeline(
 if __name__ == "__main__":
     compiler.Compiler().compile(
         pipeline_func=pipeline,
-        package_path="train.json",
+        package_path="training.json",
         type_check=False,
     )
