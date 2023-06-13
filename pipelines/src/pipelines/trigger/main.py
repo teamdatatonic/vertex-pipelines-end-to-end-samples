@@ -202,20 +202,45 @@ def sandbox_run(args: List[str] = None) -> aiplatform.PipelineJob:
     # Get commandline args
     args = parser.parse_args(args)
 
-    # If empty value for enable_caching provided on commandline default to None
-    if args.enable_caching == "":
+    # Environment variables
+    project_id = os.environ["VERTEX_PROJECT_ID"]
+    location = os.environ["VERTEX_LOCATION"]
+    pipeline_root = os.environ["VERTEX_PIPELINE_ROOT"]
+    service_account = os.environ["VERTEX_SA_EMAIL"]
+    # For CMEK and network, we want an empty string to become None, so we add "or None"
+    encryption_spec_key_name = os.environ.get("VERTEX_CMEK_IDENTIFIER") or None
+    network = os.environ.get("VERTEX_NETWORK") or None
+
+    # If enable_caching value is present and not None or "", convert from str to bool
+    # otherwise, it needs to be None
+    if args.enable_caching:
+        args.enable_caching = bool(distutils.util.strtobool(args.enable_caching))
+    else:
         args.enable_caching = None
 
-    payload = {
-        "attributes": {
-            "template_path": args.template_path,
-            "enable_caching": args.enable_caching,
-        }
-        # "data" omitted as pipeline params are taken from the default args
-        # in compiled JSON pipeline
-    }
+    # Initialise API client
+    aiplatform.init(project=project_id, location=location)
 
-    return trigger_pipeline_from_payload(payload)
+    # Instantiate PipelineJob object
+    pl = aiplatform.pipeline_jobs.PipelineJob(
+        # Display name is required but seemingly not used
+        # see
+        # https://github.com/googleapis/python-aiplatform/blob/9dcf6fb0bc8144d819938a97edf4339fe6f2e1e6/google/cloud/aiplatform/pipeline_jobs.py#L260 # noqa
+        display_name=args.template_path,
+        enable_caching=args.enable_caching,
+        template_path=args.template_path,
+        # parameter_values=parameter_values,
+        pipeline_root=pipeline_root,
+        encryption_spec_key_name=encryption_spec_key_name,
+    )
+
+    # Execute pipeline in Vertex
+    pl.submit(
+        service_account=service_account,
+        network=network,
+    )
+
+    return pl
 
 
 if __name__ == "__main__":

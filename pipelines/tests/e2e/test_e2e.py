@@ -14,16 +14,20 @@
 
 import logging
 from typing import Callable
+import distutils.util
 
 import pytest
 import os
-from google.cloud import storage
+from google.cloud import storage, aiplatform
 from kfp.v2 import compiler
 
-from pipelines.trigger.main import trigger_pipeline_from_payload
-
 project_id = os.environ["VERTEX_PROJECT_ID"]
-project_location = os.environ["VERTEX_LOCATION"]
+location = os.environ["VERTEX_LOCATION"]
+pipeline_root = os.environ["VERTEX_PIPELINE_ROOT"]
+service_account = os.environ["VERTEX_SA_EMAIL"]
+# For CMEK and network, we want an empty string to become None, so we add "or None"
+encryption_spec_key_name = os.environ.get("VERTEX_CMEK_IDENTIFIER") or None
+network = os.environ.get("VERTEX_NETWORK") or None
 
 
 def split_output_uri(output_uri: str):
@@ -176,16 +180,35 @@ def pipeline_e2e_test(
         type_check=False,
     )
 
-    # If empty value for enable_caching provided on commandline default to None
-    if enable_caching == "":
+    # If enable_caching value is present and not None or "", convert from str to bool
+    # otherwise, it needs to be None
+    if enable_caching:
+        enable_caching = bool(distutils.util.strtobool(enable_caching))
+    else:
         enable_caching = None
 
-    payload = {
-        "attributes": {"template_path": pipeline_json, "enable_caching": enable_caching}
-    }
+    # Initialise API client
+    aiplatform.init(project=project_id, location=location)
+
+    # Instantiate PipelineJob object
+    pl = aiplatform.pipeline_jobs.PipelineJob(
+        # Display name is required but seemingly not used
+        # see
+        # https://github.com/googleapis/python-aiplatform/blob/9dcf6fb0bc8144d819938a97edf4339fe6f2e1e6/google/cloud/aiplatform/pipeline_jobs.py#L260 # noqa
+        display_name=pipeline_json,
+        enable_caching=enable_caching,
+        template_path=pipeline_json,
+        # parameter_values=parameter_values,
+        pipeline_root=pipeline_root,
+        encryption_spec_key_name=encryption_spec_key_name,
+    )
 
     try:
-        pl = trigger_pipeline_from_payload(payload)
+        # Execute pipeline in Vertex
+        pl.submit(
+            service_account=service_account,
+            network=network,
+        )
 
         pl.wait()
 
