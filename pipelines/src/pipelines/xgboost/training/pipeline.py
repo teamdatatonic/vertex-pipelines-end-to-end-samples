@@ -16,7 +16,7 @@ import os
 import pathlib
 
 from google_cloud_pipeline_components.v1.bigquery import BigqueryQueryJobOp
-from kfp.v2 import compiler, dsl
+from kfp import compiler, dsl
 from pipelines import generate_query
 from bigquery_components import extract_bq_to_dataset
 from vertex_components import (
@@ -202,9 +202,3 @@ def xgboost_pipeline(
         ).set_display_name("Update best model")
 
 
-if __name__ == "__main__":
-    compiler.Compiler().compile(
-        pipeline_func=xgboost_pipeline,
-        package_path="training.json",
-        type_check=False,
-    )

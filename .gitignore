@@ -139,6 +139,9 @@ node_modules
 pipeline.json
 training.json
 prediction.json
+pipeline.yaml
+training.yaml
+prediction.yaml
 
 #pytest
 pytest.ini

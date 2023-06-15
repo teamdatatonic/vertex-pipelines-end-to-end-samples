@@ -34,7 +34,7 @@ test-trigger: ## Runs unit tests for the pipeline trigger code
 
 compile-pipeline: ## Compile the pipeline to training.json or prediction.json. Must specify pipeline=<training|prediction>
 	@cd pipelines/src && \
-	poetry run python -m pipelines.${PIPELINE_TEMPLATE}.${pipeline}.pipeline
+	poetry run kfp dsl compile --py pipelines/${PIPELINE_TEMPLATE}/${pipeline}/pipeline.py --output ${pipeline}.yaml
 
 setup-components: ## Run unit tests for a component group
 	@cd "components/${GROUP}" && \
@@ -82,7 +82,7 @@ run: ## Compile pipeline, copy assets to GCS, and run pipeline in sandbox enviro
 	@ $(MAKE) compile-pipeline && \
 	$(MAKE) sync-assets && \
 	cd pipelines/src && \
-	poetry run python -m pipelines.trigger --template_path=./$(pipeline).json --enable_caching=$(enable_pipeline_caching)
+	poetry run python -m pipelines.trigger --template_path=./$(pipeline).yaml --enable_caching=$(enable_pipeline_caching)
 
 sync_assets ?= true
 e2e-tests: ## (Optionally) copy assets to GCS, and perform end-to-end (E2E) pipeline tests. Must specify pipeline=<training|prediction>. Optionally specify enable_pipeline_caching=<true|false> (defaults to default Vertex caching behaviour). Optionally specify sync_assets=<true|false> (defaults to true)

@@ -17,7 +17,7 @@ packages = [
 python = ">=3.7,<3.11"
 Jinja2 = ">=3.0.1,<4.0.0"
 google-cloud-aiplatform = "1.24.1"
-google-cloud-pipeline-components = "1.0.42"
+google-cloud-pipeline-components = "2.0.0b5"
 bigquery-components = { path = "../components/bigquery-components", develop = true }
 vertex-components = { path = "../components/vertex-components", develop = true }
 

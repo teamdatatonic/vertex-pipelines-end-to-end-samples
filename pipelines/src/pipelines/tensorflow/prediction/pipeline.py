@@ -16,7 +16,7 @@ import os
 import pathlib
 
 from google_cloud_pipeline_components.v1.bigquery import BigqueryQueryJobOp
-from kfp.v2 import compiler, dsl
+from kfp import compiler, dsl
 
 from pipelines import generate_query
 from vertex_components import lookup_model, model_batch_predict
@@ -147,10 +147,3 @@ def tensorflow_pipeline(
         .set_display_name("Batch prediction job")
     )
 
-
-if __name__ == "__main__":
-    compiler.Compiler().compile(
-        pipeline_func=tensorflow_pipeline,
-        package_path="prediction.json",
-        type_check=False,
-    )
