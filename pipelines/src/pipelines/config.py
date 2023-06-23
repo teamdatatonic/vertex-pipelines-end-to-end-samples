@@ -13,7 +13,7 @@ class Config:
     dataset_location = env.get("VERTEX_LOCATION")
     staging_bucket = env.get("VERTEX_PIPELINE_ROOT")
     pipeline_files_gcs_path = env.get("PIPELINE_FILES_GCS_PATH")
-    resource_suffix = env.get("RESOURCE_SUFFIX")
+    resource_suffix = env.get("RESOURCE_SUFFIX", "")
     model_name = "my-xgboost-model"
     time_col = "trip_start_timestamp"
 
