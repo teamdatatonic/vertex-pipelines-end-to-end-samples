@@ -126,7 +126,6 @@ def xgboost_pipeline(
         )
         .after(preprocessing)
         .set_display_name("Extract train data")
-        .set_caching_options(True)
     ).outputs["dataset"]
     valid_dataset = (
         extract_bq_to_dataset(
@@ -138,7 +137,6 @@ def xgboost_pipeline(
         )
         .after(preprocessing)
         .set_display_name("Extract validation data")
-        .set_caching_options(True)
     ).outputs["dataset"]
     test_dataset = (
         extract_bq_to_dataset(
@@ -151,7 +149,6 @@ def xgboost_pipeline(
         )
         .after(preprocessing)
         .set_display_name("Extract test data")
-        .set_caching_options(True)
     ).outputs["dataset"]
 
     existing_model = (
@@ -162,7 +159,7 @@ def xgboost_pipeline(
             fail_on_model_not_found=False,
         )
         .set_display_name("Lookup past model")
-        .set_caching_options(True)
+        .set_caching_options(False)
         .outputs["model_resource_name"]
     )
 

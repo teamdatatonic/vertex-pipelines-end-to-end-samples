@@ -109,7 +109,7 @@ def xgboost_pipeline(
             fail_on_model_not_found=True,
         )
         .set_display_name("Look up champion model")
-        .set_caching_options(True)
+        .set_caching_options(False)
     )
 
     # batch predict from BigQuery to BigQuery
