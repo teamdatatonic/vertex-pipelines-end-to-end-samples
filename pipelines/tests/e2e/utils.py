@@ -39,7 +39,7 @@ def split_output_uri(output_uri: str):
     return (bucket_name, blob_path)
 
 
-def test_gcs_uri(output_uri: str, storage_client):
+def assert_gcs_uri(output_uri: str, storage_client):
     """
     Tests whether a uri exists on GCS. If not, check whether it is a folder path.
     Args:
@@ -66,7 +66,7 @@ def test_gcs_uri(output_uri: str, storage_client):
     return blob.size
 
 
-def test_vertex_model_uri(
+def assert_vertex_model_uri(
     model_id: str,
     model_location: str,
 ) -> bool:
@@ -94,7 +94,7 @@ def test_vertex_model_uri(
         return False
 
 
-def test_vertex_endpoint_uri(
+def assert_vertex_endpoint_uri(
     endpoint_id: str,
     endpoint_location: str,
 ) -> bool:
@@ -122,7 +122,7 @@ def test_vertex_endpoint_uri(
         return False
 
 
-def test_batch_prediction_job_uri(
+def assert_batch_prediction_job_uri(
     job_id: str,
     job_location: str,
 ) -> bool:
@@ -150,10 +150,10 @@ def test_batch_prediction_job_uri(
         return False
 
 
-def pipeline_e2e_test(
+def assert_pipeline(
     pipeline_func: Callable,
     common_tasks: dict,
-    enable_caching: bool = None,
+    enable_caching: bool,
     **kwargs: dict,
 ):
     """
@@ -186,14 +186,12 @@ def pipeline_e2e_test(
 
     try:
         pl = trigger_pipeline_from_payload(payload)
-
         pl.wait()
-
     except Exception:
         pytest.fail("pipeline not completed")
 
     # Tests
-    # 1. Check all expected tasks occured in the pipeline
+    # 1. Check all expected tasks occurred in the pipeline
     # 2-1. Check if these tasks output the correct artifacts
     # 2-2. Check if these artifacts are accessible
     details = pl.to_dict()
@@ -201,22 +199,22 @@ def pipeline_e2e_test(
 
     # check common tasks
     if len(common_tasks):
-        test_pipeline_tasks(
+        assert_pipeline_tasks(
             tasks=tasks,
             expected_tasks=common_tasks,
             allow_tasks_missing=False,
         )
 
-    # check conditioanl tasks
+    # check conditional tasks
     for _, conditional_tasks in kwargs.items():
-        test_pipeline_tasks(
+        assert_pipeline_tasks(
             tasks=tasks,
             expected_tasks=conditional_tasks,
             allow_tasks_missing=True,
         )
 
 
-def test_pipeline_tasks(tasks: list, expected_tasks: dict, allow_tasks_missing: bool):
+def assert_pipeline_tasks(tasks: list, expected_tasks: dict, allow_tasks_missing: bool):
     """
     Test if expected_task meets all the requirements:
     1. if expected tasks occured in the pipeline
@@ -265,9 +263,9 @@ def test_pipeline_tasks(tasks: list, expected_tasks: dict, allow_tasks_missing: 
 
     # test functions mappiing
     test_functions = {
-        "models": test_vertex_model_uri,
-        "endpoints": test_vertex_endpoint_uri,
-        "batchPredictionJobs": test_batch_prediction_job_uri,
+        "models": assert_vertex_model_uri,
+        "endpoints": assert_vertex_endpoint_uri,
+        "batchPredictionJobs": assert_batch_prediction_job_uri,
     }
 
     # initialise GCS client for the project
@@ -292,7 +290,7 @@ def test_pipeline_tasks(tasks: list, expected_tasks: dict, allow_tasks_missing: 
                 continue
             # if the output uri is a gcs path, fetch the file
             elif output_uri.startswith("gs://"):
-                file_size = test_gcs_uri(output_uri, storage_client)
+                file_size = assert_gcs_uri(output_uri, storage_client)
                 assert (
                     file_size > 0
                 ), f"{output_artifact} in task {task_name} is not accessible"

@@ -92,8 +92,8 @@ e2e-tests: ## (Optionally) copy assets to GCS, and perform end-to-end (E2E) pipe
 	else \
 		echo "Skipping syncing assets to GCS"; \
     fi && \
-	cd pipelines && \
-	poetry run pytest --log-cli-level=INFO tests/${PIPELINE_TEMPLATE}/$(pipeline) --enable_caching=$(enable_pipeline_caching)
+	cd pipelines/src && \
+	ENABLE_PIPELINE_CACHING=$(enable_pipeline_caching) poetry run pytest .. -m $(pipeline)
 
 env ?= dev
 deploy-infra: ## Deploy the Terraform infrastructure to your project. Requires VERTEX_PROJECT_ID and VERTEX_LOCATION env variables to be set in env.sh. Optionally specify env=<dev|test|prod> (default = dev)

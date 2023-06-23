@@ -43,7 +43,8 @@ ignore = [
 
 [tool.pytest.ini_options]
 pythonpath = [
-  "src"
+    "src",
+    "tests",
 ]
 testpaths = "tests"
 junit_family = "xunit2"
