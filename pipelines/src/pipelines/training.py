@@ -33,14 +33,13 @@ def pipeline(
     project_location: str = config.project_location,
     ingestion_project_id: str = config.project_id_ingestion,
     model_name: str = config.model_name,
-    dataset_id: str = config.dataset_id,
+    dataset_id: str = config.preprocessing_dataset_id,
     dataset_location: str = config.dataset_location,
-    ingestion_dataset_id: str = config.dataset_id_ingestion,
+    ingestion_dataset_id: str = config.ingestion_dataset_id,
     timestamp: str = config.timestamp,
     staging_bucket: str = config.staging_bucket,
     pipeline_files_gcs_path: str = config.pipeline_files_gcs_path,
     test_dataset_uri: str = config.test_dataset_uri,
-    resource_suffix: str = os.environ.get("RESOURCE_SUFFIX"),
 ):
     """
     XGB training pipeline which:
@@ -64,8 +63,6 @@ def pipeline(
             If any time part is missing, it will be regarded as zero.
         staging_bucket (str): Staging bucket for pipeline artifacts.
         pipeline_files_gcs_path (str): GCS path where the pipeline files are located.
-        resource_suffix (str): Optional. Additional suffix to append GCS resources
-            that get overwritten.
         test_dataset_uri (str): Optional. GCS URI of statis held-out test dataset.
     """
 
@@ -81,14 +78,14 @@ def pipeline(
         source_dataset=f"{ingestion_project_id}.{ingestion_dataset_id}",
         source_table=config.ingestion_table,
         preprocessing_dataset=f"{ingestion_project_id}.{dataset_id}",
-        ingested_table=config.ingested_table + str(resource_suffix),
+        ingested_table=config.ingested_table,
         dataset_region=project_location,
         filter_column=config.time_col,
         target_column=config.label_col,
         filter_start_value=timestamp,
-        train_table=config.train_table + str(resource_suffix),
-        validation_table=config.valid_table + str(resource_suffix),
-        test_table=config.test_table + str(resource_suffix),
+        train_table=config.train_table,
+        validation_table=config.valid_table,
+        test_table=config.test_table,
     )
 
     preprocessing = BigqueryQueryJobOp(
@@ -113,7 +110,7 @@ def pipeline(
         extract_bq_to_dataset(
             bq_client_project_id=project_id,
             source_project_id=project_id,
-            dataset_id=dataset_id,
+            dataset_id=config.preprocessing_dataset_id,
             table_name=config.valid_table,
             dataset_location=dataset_location,
         )

@@ -29,13 +29,12 @@ def pipeline(
     model_name: str = config.model_name,
     preprocessing_dataset_id: str = config.preprocessing_dataset_id,
     dataset_location: str = config.dataset_location,
-    ingestion_dataset_id: str = config.project_id_ingestion,
+    ingestion_dataset_id: str = config.ingestion_dataset_id,
     prediction_dataset_id: str = config.prediction_dataset_id,
     timestamp: str = config.timestamp,
     batch_prediction_machine_type: str = config.machine_type,
     batch_prediction_min_replicas: int = config.min_replicas,
     batch_prediction_max_replicas: int = config.max_replicas,
-    resource_suffix: str = os.environ.get("RESOURCE_SUFFIX"),
 ):
     """
     XGB prediction pipeline which:
@@ -65,8 +64,6 @@ def pipeline(
             Vertex Batch Prediction job for horizontal scalability
         batch_prediction_max_replicas (int): Maximum no of machines to distribute the
             Vertex Batch Prediction job for horizontal scalability.
-        resource_suffix (str): Optional. Additional suffix to append GCS resources
-            that get overwritten.
 
     Returns:
         None
@@ -83,7 +80,7 @@ def pipeline(
         source_table=config.ingestion_table,
         prediction_dataset=f"{ingestion_project_id}.{prediction_dataset_id}",
         preprocessing_dataset=f"{ingestion_project_id}.{preprocessing_dataset_id}",
-        ingested_table=config.ingested_table + str(resource_suffix),
+        ingested_table=config.ingested_table,
         dataset_region=project_location,
         filter_column=config.time_col,
         filter_start_value=timestamp,
@@ -106,19 +103,16 @@ def pipeline(
     )
 
     # batch predict from BigQuery to BigQuery
-    bigquery_source_input_uri = (
-        f"bq://{project_id}.{preprocessing_dataset_id}.{config.ingested_table}"
-    )
-    bigquery_destination_output_uri = f"bq://{project_id}.{prediction_dataset_id}"
-
+    source_uri = f"bq://{project_id}.{preprocessing_dataset_id}.{config.ingested_table}"
+    destination_uri = f"bq://{project_id}.{prediction_dataset_id}"
     batch_prediction = (
         model_batch_predict(
             model=champion_model.outputs["model"],
             job_display_name=config.predict_job_name,
             project_location=project_location,
             project_id=project_id,
-            source_uri=bigquery_source_input_uri,
-            destination_uri=bigquery_destination_output_uri,
+            source_uri=source_uri,
+            destination_uri=destination_uri,
             source_format="bigquery",
             destination_format="bigquery",
             machine_type=batch_prediction_machine_type,
