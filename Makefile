@@ -15,6 +15,7 @@
 -include env.sh
 export
 
+
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
     
@@ -71,12 +72,12 @@ test-all-components-coverage: ## Run tests with coverage
 	done
 
 sync-assets: ## Sync assets folder to GCS.
-	@if [ -d "./pipelines/assets/" ] ; then \
-		echo "Syncing assets to GCS" && \
-		gsutil -m rsync -r -d ./pipelines/assets ${PIPELINE_FILES_GCS_PATH}/assets ; \
+	@if [ -d "./pipelines/assets/" ]; then \
+		echo "Syncing assets to GCS"; \
+		gsutil -m rsync -r -d ./pipelines/assets $(PIPELINE_FILES_GCS_PATH)/assets ; \
 	else \
-		echo "No assets folder found" ; \
-	fi ;
+		echo "No assets folder found"; \
+	fi;
 
 run: ## Compile pipeline, copy assets to GCS, and run pipeline in sandbox environment. Must specify pipeline=<training|prediction>. Optionally specify enable_pipeline_caching=<true|false> (defaults to default Vertex caching behaviour)
 	@ $(MAKE) compile-pipeline && \
