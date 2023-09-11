@@ -46,6 +46,11 @@ install: ## Set up local environment for Python development on pipelines
 	done ; \
 
 
+run-notebooks:
+	@cd pipelines && \
+		poetry run pip install jupyter && \
+		poetry run jupyter notebook ../docs/
+
 compile: ## Compile the pipeline to pipeline.yaml. Must specify pipeline=<training|prediction>
 	@cd pipelines/src && \
 	poetry run kfp dsl compile --py pipelines/${pipeline}/pipeline.py --output pipelines/${pipeline}/pipeline.yaml --function pipeline
