@@ -35,11 +35,11 @@ compile-pipeline: ## Compile the pipeline to training.json or prediction.json. M
 	@cd pipelines/src && \
 	pipenv run python -m pipelines.${PIPELINE_TEMPLATE}.${pipeline}.pipeline
 
-setup-components: ## Run unit tests for a component group
+setup-components: ## Install dependencies for a component group
 	@cd "components/${GROUP}" && \
 	pipenv install --dev
 
-setup-all-components: ## Run unit tests for all pipeline components
+setup-all-components: ## Install dependencies for all pipeline components
 	@set -e && \
 	for component_group in components/*/ ; do \
 		echo "Setup components under $$component_group" && \
