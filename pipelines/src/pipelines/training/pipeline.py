@@ -68,10 +68,9 @@ def pipeline(
     ingestion_project_id: str = os.environ.get("VERTEX_PROJECT_ID"),
     datasource_project_id: str = "bigquery-public-data",
     ingestion_dataset_id: str = "london_bicycles",
-    ingestion_dataset_location: str = "EU",
     model_name: str = "simple_xgboost",
     dataset_id: str = "preprocessing_new",
-    dataset_location: str = os.environ.get("VERTEX_LOCATION"),
+    dataset_location: str = "EU",
     timestamp: str = "2022-12-01 00:00:00",
     resource_suffix: str = os.environ.get("RESOURCE_SUFFIX"),
     test_dataset_uri: str = "",
@@ -135,7 +134,7 @@ def pipeline(
         source_table=ingestion_table,
         preprocessing_dataset=f"{ingestion_project_id}.{dataset_id}",
         ingested_table=ingested_table,
-        dataset_region=ingestion_dataset_location,
+        dataset_region=dataset_location,
         filter_column=time_column,
         target_column=label_column_name,
         filter_start_value=timestamp,
@@ -147,7 +146,7 @@ def pipeline(
     preprocessing = (
         BigqueryQueryJobOp(
             project=project_id,
-            location=ingestion_dataset_location,
+            location=dataset_location,
             query=preprocessing_query,
         )
         .set_caching_options(False)
@@ -162,7 +161,7 @@ def pipeline(
             source_project_id=project_id,
             dataset_id=dataset_id,
             table_name=train_table,
-            dataset_location=ingestion_dataset_location,
+            dataset_location=dataset_location,
         )
         .after(preprocessing)
         .set_display_name("Extract train data")
@@ -174,7 +173,7 @@ def pipeline(
             source_project_id=project_id,
             dataset_id=dataset_id,
             table_name=valid_table,
-            dataset_location=ingestion_dataset_location,
+            dataset_location=dataset_location,
         )
         .after(preprocessing)
         .set_display_name("Extract validation data")
@@ -186,7 +185,7 @@ def pipeline(
             source_project_id=project_id,
             dataset_id=dataset_id,
             table_name=test_table,
-            dataset_location=ingestion_dataset_location,
+            dataset_location=dataset_location,
             destination_gcs_uri=test_dataset_uri,
         )
         .after(preprocessing)
