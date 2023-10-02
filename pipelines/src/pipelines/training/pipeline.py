@@ -70,7 +70,7 @@ def pipeline(
     ingestion_dataset_id: str = "london_bicycles",
     ingestion_dataset_location: str = "EU",
     model_name: str = "simple_xgboost",
-    dataset_id: str = "preprocessing2",
+    dataset_id: str = "preprocessing_new",
     dataset_location: str = os.environ.get("VERTEX_LOCATION"),
     timestamp: str = "2022-12-01 00:00:00",
     resource_suffix: str = os.environ.get("RESOURCE_SUFFIX"),
@@ -130,7 +130,7 @@ def pipeline(
     queries_folder = pathlib.Path(__file__).parent / "queries"
 
     preprocessing_query = generate_query(
-        queries_folder / "preprocessing_2.sql",
+        queries_folder / "preprocessing.sql",
         source_dataset=f"{datasource_project_id}.{ingestion_dataset_id}",
         source_table=ingestion_table,
         preprocessing_dataset=f"{ingestion_project_id}.{dataset_id}",
