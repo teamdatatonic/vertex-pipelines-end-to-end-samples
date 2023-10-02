@@ -31,10 +31,10 @@ logging.basicConfig(level=logging.DEBUG)
 
 # used for monitoring during prediction time
 TRAINING_DATASET_INFO = "training_dataset.json"
-# numeric/categorical features in Chicago trips dataset to be preprocessed
-NUM_COLS = ["dayofweek", "hourofday", "trip_distance", "trip_miles", "trip_seconds"]
-ORD_COLS = ["company"]
-OHE_COLS = ["payment_type"]
+# numeric/categorical features in London bicycles dataset to be preprocessed
+NUM_COLS = ["duration_seconds", "hourofday", "distance_from_city_center"]
+ORD_COLS = ["start_station_name"]
+OHE_COLS = ["isweekday"]
 
 
 def split_xy(df: pd.DataFrame, label: str) -> (pd.DataFrame, pd.Series):
