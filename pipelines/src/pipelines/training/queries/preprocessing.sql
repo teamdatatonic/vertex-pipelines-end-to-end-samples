@@ -19,7 +19,9 @@ SELECT
 ,filtered_data AS (
 SELECT
   *
-FROM `{{ source_dataset }}.{{ source_table }}`, filter_start_values
+FROM  filter_start_values, `{{ source_dataset }}.{{ source_table[0] }}` AS h
+JOIN `{{ source_dataset }}.{{ source_table[1] }}` AS s
+ON h.start_station_id = s.id
     WHERE
          DATE(TIMESTAMP({{ filter_column }}) )BETWEEN
          DATE_SUB(DATE(CAST(filter_start_values.filter_start_value AS DATETIME)), INTERVAL 3 MONTH) AND
@@ -33,7 +35,11 @@ FROM `{{ source_dataset }}.{{ source_table }}`, filter_start_values
 
 SELECT
   start_station_name,
-  IF(EXTRACT(dayofweek FROM start_date) BETWEEN 2 AND 6,'weekday','weekend') AS dayofweek,
+  IF(EXTRACT(dayofweek FROM start_date) BETWEEN 2 AND 6,'weekday','weekend') AS isweekday,
+  ST_DISTANCE(ST_GEOGPOINT(longitude,
+        latitude),
+      ST_GEOGPOINT(-0.1,
+        51.5))/1000 AS distance_from_city_center,
     CAST(EXTRACT(HOUR FROM start_date) AS FLOAT64) AS hourofday,
     CAST( CASE WHEN duration is NULL then m.avg_duration_seconds
                WHEN duration <= 0 then m.avg_duration_seconds

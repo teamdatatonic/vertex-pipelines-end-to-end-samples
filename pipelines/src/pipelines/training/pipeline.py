@@ -105,7 +105,7 @@ def pipeline(
     # into different components of the pipeline
     label_column_name = "duration_seconds"
     time_column = "start_date"
-    ingestion_table = "cycle_hire"
+    ingestion_table = ["cycle_hire", "cycle_stations"]
     table_suffix = f"_xgb_training_{resource_suffix}"  # suffix to table names
     ingested_table = "ingested_data" + table_suffix
     preprocessed_table = "preprocessed_data" + table_suffix
@@ -147,7 +147,7 @@ def pipeline(
     preprocessing = (
         BigqueryQueryJobOp(
             project=project_id,
-            location=dataset_location,
+            location=ingestion_dataset_location,
             query=preprocessing_query,
         )
         .set_caching_options(False)
@@ -162,7 +162,7 @@ def pipeline(
             source_project_id=project_id,
             dataset_id=dataset_id,
             table_name=train_table,
-            dataset_location=dataset_location,
+            dataset_location=ingestion_dataset_location,
         )
         .after(preprocessing)
         .set_display_name("Extract train data")
@@ -174,7 +174,7 @@ def pipeline(
             source_project_id=project_id,
             dataset_id=dataset_id,
             table_name=valid_table,
-            dataset_location=dataset_location,
+            dataset_location=ingestion_dataset_location,
         )
         .after(preprocessing)
         .set_display_name("Extract validation data")
@@ -186,7 +186,7 @@ def pipeline(
             source_project_id=project_id,
             dataset_id=dataset_id,
             table_name=test_table,
-            dataset_location=dataset_location,
+            dataset_location=ingestion_dataset_location,
             destination_gcs_uri=test_dataset_uri,
         )
         .after(preprocessing)
