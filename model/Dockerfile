@@ -29,6 +29,10 @@ FROM builder AS training
 
 COPY training/train.py training/train.py
 
+FROM builder as tuning
+RUN pip install cloudml-hypertune
+COPY tuning/tune.py tuning/tune.py
+
 FROM builder AS serving
 
 RUN poetry install --with serving
