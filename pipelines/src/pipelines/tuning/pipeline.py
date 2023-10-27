@@ -53,7 +53,7 @@ def worker_pool_specs(
     ]
 
     for key, value in hparams.items():
-        CMDARGS.extend(["--" + key, value])
+        CMDARGS.extend(["--" + str(key), str(value)])
 
     # The spec of the worker pools including machine type and Docker image
     worker_pool_specs = [
@@ -65,7 +65,29 @@ def worker_pool_specs(
             "container_spec": {
                 "image_uri": tuning_container_image,
                 "command": ["python"],
-                "args": CMDARGS,
+                "args": [
+                    "training/tune.py",
+                    "--train-data",
+                    train_data.path,
+                    "--valid-data",
+                    valid_data.path,
+                    "--test-data",
+                    test_data.path,
+                    "--booster",
+                    "gbtree",
+                    "--early_stopping_rounds",
+                    "10",
+                    "--label",
+                    "total_fare",
+                    "--max_depth",
+                    "6",
+                    "--min_split_loss",
+                    "0",
+                    "--n_estimators",
+                    "200",
+                    "--objective",
+                    "reg:squarederror",
+                ],
             },
         }
     ]
@@ -161,7 +183,7 @@ def pipeline(
             location=dataset_location,
             query=preprocessing_query,
         )
-        .set_caching_options(False)
+        .set_caching_options(True)
         .set_display_name("Ingest & preprocess data")
     )
 
@@ -177,7 +199,7 @@ def pipeline(
         )
         .after(preprocessing)
         .set_display_name("Extract train data")
-        .set_caching_options(False)
+        .set_caching_options(True)
     ).outputs["dataset"]
     valid_dataset = (
         extract_bq_to_dataset(
@@ -189,7 +211,7 @@ def pipeline(
         )
         .after(preprocessing)
         .set_display_name("Extract validation data")
-        .set_caching_options(False)
+        .set_caching_options(True)
     ).outputs["dataset"]
     test_dataset = (
         extract_bq_to_dataset(
@@ -202,7 +224,7 @@ def pipeline(
         )
         .after(preprocessing)
         .set_display_name("Extract test data")
-        .set_caching_options(False)
+        .set_caching_options(True)
     ).outputs["dataset"]
 
     worker_pool = worker_pool_specs(
@@ -222,7 +244,7 @@ def pipeline(
         study_spec_parameters=spec_parameters,
         max_trial_count=3,
         parallel_trial_count=3,
-        base_output_directory="dt-turbo-templates-dev-staging",
+        base_output_directory="gs://dt-turbo-templates-dev-pl-root",
     )
     # trials = hyperparameter_tuning_job.GetTrialsOp(
     #     gcp_resources=tuning.outputs["gcp_resources"]
