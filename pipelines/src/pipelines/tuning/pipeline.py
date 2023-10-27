@@ -28,13 +28,14 @@ from pipelines import generate_query
 from bigquery_components import extract_bq_to_dataset
 
 CONTAINER_IMAGE_REGISTRY = os.environ["CONTAINER_IMAGE_REGISTRY"]
+VERTEX_PIPELINE_ROOT = os.environ["VERTEX_PIPELINE_ROOT"]
 RESOURCE_SUFFIX = os.environ.get("RESOURCE_SUFFIX", "default")
 TRAINING_IMAGE = f"{CONTAINER_IMAGE_REGISTRY}/training:{RESOURCE_SUFFIX}"
 SERVING_IMAGE = f"{CONTAINER_IMAGE_REGISTRY}/serving:{RESOURCE_SUFFIX}"
 TUNING_IMAGE = f"{CONTAINER_IMAGE_REGISTRY}/tuning:{RESOURCE_SUFFIX}"
 
 
-@dsl.component
+@dsl.component(base_image="python:3.9")
 def worker_pool_specs(
     train_data: Input[Dataset],
     valid_data: Input[Dataset],
@@ -42,8 +43,42 @@ def worker_pool_specs(
     tuning_container_image: str,
     hparams: dict,
 ) -> list:
+    """
+    Generate a specification for worker pools to perform hyperparameter tuning..
+
+    Args:
+        train_data (Input[Dataset]): Input dataset for training.
+        valid_data (Input[Dataset]): Input dataset for validation.
+        test_data (Input[Dataset]): Input dataset for testing.
+        tuning_container_image (str): Container image to be used for the tuning job.
+        hparams (dict): A dictionary containing hyperparameter key-value pairs.
+
+    Returns:
+        list: A list of worker pool specifications, each specifying the machine type,
+        Docker image, and command arguments for a worker pool.
+
+    Example:
+    worker_pool_specs(
+        train_data=train_data,
+        valid_data=valid_data,
+        test_data=test_data,
+        tuning_container_image="gcr.io/my-project/tuning-image:latest",
+        hparams={"learning_rate": 0.001, "batch_size": 64}
+    )
+
+    The function returns a list containing a single worker pool specification.
+
+    Note:
+    The worker pool specification is a data structure used to define the resources and
+    configurations needed for running distributed training or hyperparameter tuning jobs
+    in a managed AI platform.
+
+    For each hyperparameter combination to be tuned, you may need to create a separate
+    worker pool specification with appropriate command arguments which depends on your
+    tuning training script.
+    """
     CMDARGS = [
-        "training/tune.py",
+        "tuning/tune.py",
         "--train-data",
         train_data.path,
         "--valid-data",
@@ -65,33 +100,95 @@ def worker_pool_specs(
             "container_spec": {
                 "image_uri": tuning_container_image,
                 "command": ["python"],
-                "args": [
-                    "training/tune.py",
-                    "--train-data",
-                    train_data.path,
-                    "--valid-data",
-                    valid_data.path,
-                    "--test-data",
-                    test_data.path,
-                    "--booster",
-                    "gbtree",
-                    "--early_stopping_rounds",
-                    "10",
-                    "--label",
-                    "total_fare",
-                    "--max_depth",
-                    "6",
-                    "--min_split_loss",
-                    "0",
-                    "--n_estimators",
-                    "200",
-                    "--objective",
-                    "reg:squarederror",
-                ],
+                "args": CMDARGS,
             },
         }
     ]
     return worker_pool_specs
+
+
+@dsl.component(
+    packages_to_install=[
+        "google-cloud-aiplatform",
+        "google-cloud-pipeline-components",
+        "protobuf",
+    ],
+    base_image="python:3.9",
+)
+def GetTrialsOp(gcp_resources: str) -> list:
+    """Retrieves the best trial from the trials.
+
+    Args:
+        gcp_resources (str): Proto tracking the hyperparameter tuning job.
+
+    Returns:
+        List of strings representing the intermediate JSON representation of the
+        trials from the hyperparameter tuning job.
+    """
+    from google.cloud import aiplatform
+    from google_cloud_pipeline_components.proto.gcp_resources_pb2 import GcpResources
+    from google.protobuf.json_format import Parse
+    from google.cloud.aiplatform_v1.types import study
+
+    api_endpoint_suffix = "-aiplatform.googleapis.com"
+    gcp_resources_proto = Parse(gcp_resources, GcpResources())
+    gcp_resources_split = gcp_resources_proto.resources[0].resource_uri.partition(
+        "projects"
+    )
+    resource_name = gcp_resources_split[1] + gcp_resources_split[2]
+    prefix_str = gcp_resources_split[0]
+    prefix_str = prefix_str[: prefix_str.find(api_endpoint_suffix)]
+    api_endpoint = prefix_str[(prefix_str.rfind("//") + 2) :] + api_endpoint_suffix
+
+    client_options = {"api_endpoint": api_endpoint}
+    job_client = aiplatform.gapic.JobServiceClient(client_options=client_options)
+    response = job_client.get_hyperparameter_tuning_job(name=resource_name)
+
+    return [study.Trial.to_json(trial) for trial in response.trials]
+
+
+@dsl.component(packages_to_install=["google-cloud-aiplatform"], base_image="python:3.9")
+def GetBestTrialOp(trials: list, study_spec_metrics: list) -> str:
+    """Retrieves the best trial from the trials.
+
+    Args:
+        trials (list): Required. List representing the intermediate
+          JSON representation of the trials from the hyperparameter tuning job.
+        study_spec_metrics (list): Required. List serialized from dictionary
+          representing the metrics to optimize.
+          The dictionary key is the metric_id, which is reported by your training
+          job, and the dictionary value is the optimization goal of the metric
+          ('minimize' or 'maximize'). example:
+          metrics = hyperparameter_tuning_job.serialize_metrics(
+              {'loss': 'minimize', 'accuracy': 'maximize'})
+
+    Returns:
+        String representing the intermediate JSON representation of the best
+        trial from the list of trials.
+
+    Raises:
+        RuntimeError: If there are multiple metrics.
+    """
+    from google.cloud.aiplatform_v1.types import study
+
+    if len(study_spec_metrics) > 1:
+        raise RuntimeError(
+            "Unable to determine best parameters for multi-objective"
+            " hyperparameter tuning."
+        )
+    trials_list = [study.Trial.from_json(trial) for trial in trials]
+    best_trial = None
+    goal = study_spec_metrics[0]["goal"]
+    best_fn = None
+    if goal == study.StudySpec.MetricSpec.GoalType.MAXIMIZE:
+        best_fn = max
+    elif goal == study.StudySpec.MetricSpec.GoalType.MINIMIZE:
+        best_fn = min
+    best_trial = best_fn(
+        trials_list, key=lambda trial: trial.final_measurement.metrics[0].value
+    )
+
+    return study.Trial.to_json(best_trial)
 
 
 @dsl.pipeline(name="xgboost-train-pipeline")
@@ -107,7 +204,26 @@ def pipeline(
     test_dataset_uri: str = "",
 ):
     """
-    XGB training pipeline tuning pipeline.
+    XGB hyperparametur tuning pipeline which.
+    1. Splits and extracts a dataset from BQ to GCS
+    2. Execute hyperparameter tuning to optimize the XGBoost model.
+    3. Retrieve and record the best hyperparameters from the tuning job.
+
+    Args:
+        project_id (str): project id of the Google Cloud project
+        project_location (str): location of the Google Cloud project
+        ingestion_project_id (str): project id containing the source bigquery data
+            for ingestion. This can be the same as `project_id` if the source data is
+            in the same project where the ML pipeline is executed.
+        dataset_id (str): id of BQ dataset used to store all staging data & predictions
+        dataset_location (str): location of dataset
+        ingestion_dataset_id (str): dataset id of ingestion data
+        timestamp (str): Optional. Empty or a specific timestamp in ISO 8601 format
+            (YYYY-MM-DDThh:mm:ss.sss±hh:mm or YYYY-MM-DDThh:mm:ss).
+            If any time part is missing, it will be regarded as zero.
+        resource_suffix (str): Optional. Additional suffix to append GCS resources
+            that get overwritten.
+        test_dataset_uri (str): Optional. GCS URI of held-out test dataset.
     """
 
     # Create variables to ensure the same arguments are passed
@@ -138,7 +254,7 @@ def pipeline(
     # List serialized from the dictionary representing metrics to optimize.
     # The dictionary key is the metric_id, which is reported by your training job,
     # and the dictionary value is the optimization goal of the metric.
-    spec_metrics = hyperparameter_tuning_job.serialize_metrics(
+    study_spec_metrics = hyperparameter_tuning_job.serialize_metrics(
         {"rootMeanSquaredError": "minimize"}
     )
 
@@ -146,15 +262,17 @@ def pipeline(
     # represents parameters to optimize. The dictionary key is the parameter_id,
     # which is passed into your training job as a command line key word argument,and the
     # dictionary value is the parameter specification of the metric.
-    spec_parameters = hyperparameter_tuning_job.serialize_parameters(
+    study_spec_parameters = hyperparameter_tuning_job.serialize_parameters(
         {
             "learning_rate": hpt.DoubleParameterSpec(min=0.001, max=1, scale="log"),
         }
     )
 
-    # max_trial_count=3
-    # parallel_trial_count=3
-    # base_output_directory="dt-turbo-templates-dev-staging"
+    max_trial_count = 3
+    parallel_trial_count = 3
+    base_output_directory = VERTEX_PIPELINE_ROOT
+    study_spec_algorithm = "ALGORITHM_UNSPECIFIED"
+    study_spec_measurement_selection_type = "BEST_MEASUREMENT"
     # --------------------------------------
 
     # generate sql queries which are used in ingestion and preprocessing
@@ -199,7 +317,7 @@ def pipeline(
         )
         .after(preprocessing)
         .set_display_name("Extract train data")
-        .set_caching_options(True)
+        .set_caching_options(False)
     ).outputs["dataset"]
     valid_dataset = (
         extract_bq_to_dataset(
@@ -211,7 +329,7 @@ def pipeline(
         )
         .after(preprocessing)
         .set_display_name("Extract validation data")
-        .set_caching_options(True)
+        .set_caching_options(False)
     ).outputs["dataset"]
     test_dataset = (
         extract_bq_to_dataset(
@@ -224,7 +342,7 @@ def pipeline(
         )
         .after(preprocessing)
         .set_display_name("Extract test data")
-        .set_caching_options(True)
+        .set_caching_options(False)
     ).outputs["dataset"]
 
     worker_pool = worker_pool_specs(
@@ -240,17 +358,17 @@ def pipeline(
         project=project_id,
         location=project_location,
         worker_pool_specs=worker_pool.output,
-        study_spec_metrics=spec_metrics,
-        study_spec_parameters=spec_parameters,
-        max_trial_count=3,
-        parallel_trial_count=3,
-        base_output_directory="gs://dt-turbo-templates-dev-pl-root",
+        study_spec_metrics=study_spec_metrics,
+        study_spec_parameters=study_spec_parameters,
+        max_trial_count=max_trial_count,
+        parallel_trial_count=parallel_trial_count,
+        base_output_directory=base_output_directory,
+        study_spec_algorithm=study_spec_algorithm,
+        study_spec_measurement_selection_type=study_spec_measurement_selection_type,
     )
-    # trials = hyperparameter_tuning_job.GetTrialsOp(
-    #     gcp_resources=tuning.outputs["gcp_resources"]
-    # )
 
-    # best_trial_op = hyperparameter_tuning_job.GetBestTrialOp(
-    #     trials=trials.output,
-    #     study_spec_metrics=study_spec_metrics
-    # )
+    trials = GetTrialsOp(gcp_resources=tuning.outputs["gcp_resources"])
+
+    best_trial = GetBestTrialOp(
+        trials=trials.output, study_spec_metrics=study_spec_metrics
+    )
