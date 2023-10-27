@@ -278,7 +278,7 @@ def pipeline(
     # generate sql queries which are used in ingestion and preprocessing
     # operations
 
-    queries_folder = pathlib.Path(__file__).parent / "queries"
+    queries_folder = pathlib.Path(__file__).parent.parent / "training" / "queries"
 
     preprocessing_query = generate_query(
         queries_folder / "preprocessing.sql",
@@ -301,7 +301,7 @@ def pipeline(
             location=dataset_location,
             query=preprocessing_query,
         )
-        .set_caching_options(True)
+        .set_caching_options(False)
         .set_display_name("Ingest & preprocess data")
     )
 
