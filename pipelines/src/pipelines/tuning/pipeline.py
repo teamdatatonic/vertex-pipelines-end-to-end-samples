@@ -39,6 +39,7 @@ def worker_pool_specs(
     train_data: Input[Dataset],
     valid_data: Input[Dataset],
     test_data: Input[Dataset],
+    tuning_container_image: str,
     hparams: dict,
 ) -> list:
     CMDARGS = [
@@ -62,7 +63,7 @@ def worker_pool_specs(
             },
             "replica_count": 1,
             "container_spec": {
-                "image_uri": TUNING_IMAGE,
+                "image_uri": tuning_container_image,
                 "command": ["python"],
                 "args": CMDARGS,
             },
@@ -84,28 +85,7 @@ def pipeline(
     test_dataset_uri: str = "",
 ):
     """
-    XGB training pipeline which:
-     1. Splits and extracts a dataset from BQ to GCS
-     2. Trains a model via Vertex AI CustomTrainingJob
-     3. Evaluates the model against the current champion model
-     4. If better the model becomes the new default model
-
-    Args:
-        project_id (str): project id of the Google Cloud project
-        project_location (str): location of the Google Cloud project
-        ingestion_project_id (str): project id containing the source bigquery data
-            for ingestion. This can be the same as `project_id` if the source data is
-            in the same project where the ML pipeline is executed.
-        model_name (str): name of model
-        dataset_id (str): id of BQ dataset used to store all staging data & predictions
-        dataset_location (str): location of dataset
-        ingestion_dataset_id (str): dataset id of ingestion data
-        timestamp (str): Optional. Empty or a specific timestamp in ISO 8601 format
-            (YYYY-MM-DDThh:mm:ss.sss±hh:mm or YYYY-MM-DDThh:mm:ss).
-            If any time part is missing, it will be regarded as zero.
-        resource_suffix (str): Optional. Additional suffix to append GCS resources
-            that get overwritten.
-        test_dataset_uri (str): Optional. GCS URI of statis held-out test dataset.
+    XGB training pipeline tuning pipeline.
     """
 
     # Create variables to ensure the same arguments are passed
@@ -230,6 +210,7 @@ def pipeline(
         valid_data=valid_dataset,
         test_data=test_dataset,
         hparams=hparams,
+        tuning_container_image=TUNING_IMAGE,
     ).set_display_name("Worker Pool Specs")
 
     tuning = HyperparameterTuningJobRunOp(
