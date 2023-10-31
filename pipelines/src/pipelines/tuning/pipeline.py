@@ -272,6 +272,7 @@ def pipeline(
     base_output_directory = (
         f"{VERTEX_PIPELINE_ROOT}/hpt-{PIPELINE_JOB_CREATE_TIME_UTC_PLACEHOLDER}"
     )
+    display_name = f"hpt-{PIPELINE_JOB_CREATE_TIME_UTC_PLACEHOLDER}"
     study_spec_algorithm = "ALGORITHM_UNSPECIFIED"
     study_spec_measurement_selection_type = "BEST_MEASUREMENT"
     # --------------------------------------
@@ -354,7 +355,7 @@ def pipeline(
         tuning_container_image=TUNING_IMAGE,
     ).set_display_name("Worker Pool Specs")
     tuning = HyperparameterTuningJobRunOp(
-        display_name="HPT JOB",
+        display_name=display_name,
         project=project_id,
         location=project_location,
         worker_pool_specs=worker_pool.output,
