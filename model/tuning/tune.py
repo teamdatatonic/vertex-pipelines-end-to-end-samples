@@ -13,7 +13,7 @@
 # limitations under the License.
 import argparse
 from pathlib import Path
-
+import json
 import joblib
 import os
 import logging
@@ -185,6 +185,21 @@ def main():
     logging.info(f"Save model to: {args.model}")
     Path(args.model).mkdir(parents=True)
     joblib.dump(pipeline, f"{args.model}/model.joblib")
+
+    # Persist URIs of training file(s) for model monitoring in batch predictions
+    # See https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1beta1.types.ModelMonitoringObjectiveConfig.TrainingDataset  # noqa: E501
+    # for the expected schema.
+    path = f"{args.model}/{TRAINING_DATASET_INFO}"
+    training_dataset_for_monitoring = {
+        "gcsSource": {"uris": [args.train_data]},
+        "dataFormat": "csv",
+        "targetField": label,
+    }
+    logging.info(f"Training dataset info: {training_dataset_for_monitoring}")
+
+    with open(path, "w") as fp:
+        logging.info(f"Save training dataset info for model monitoring: {path}")
+        json.dump(training_dataset_for_monitoring, fp)
 
     # DEFINE METRIC
     hp_metric = metrics["rootMeanSquaredError"]
