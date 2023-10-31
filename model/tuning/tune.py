@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import argparse
-import logging
-import hypertune
+from pathlib import Path
 
+import joblib
+import os
+import logging
+
+import hypertune
 import numpy as np
 import pandas as pd
 from sklearn import metrics as skmetrics
@@ -49,6 +53,9 @@ def main():
     parser.add_argument("--train-data", type=str, required=True)
     parser.add_argument("--valid-data", type=str, required=True)
     parser.add_argument("--test-data", type=str, required=True)
+    parser.add_argument(
+        "--model", default=os.getenv("AIP_MODEL_DIR"), type=str, help=""
+    )
     parser.add_argument(
         "--n_estimators",
         type=int,
@@ -87,6 +94,9 @@ def main():
     )
 
     args = parser.parse_args()
+
+    if args.model.startswith("gs://"):
+        args.model = "/gcs/" + args.model[5:]
 
     logging.info("Read csv files into dataframes")
     df_train = pd.read_csv(args.train_data)
@@ -171,6 +181,10 @@ def main():
             skmetrics.mean_squared_log_error(y_test, y_pred)
         ),
     }
+
+    logging.info(f"Save model to: {args.model}")
+    Path(args.model).mkdir(parents=True)
+    joblib.dump(pipeline, f"{args.model}/model.joblib")
 
     # DEFINE METRIC
     hp_metric = metrics["rootMeanSquaredError"]

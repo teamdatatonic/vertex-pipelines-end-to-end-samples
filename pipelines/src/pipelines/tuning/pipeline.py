@@ -23,15 +23,13 @@ from google_cloud_pipeline_components.v1.hyperparameter_tuning_job import (
 from google.cloud.aiplatform import hyperparameter_tuning as hpt
 from google_cloud_pipeline_components.v1 import hyperparameter_tuning_job
 from kfp import dsl
-from kfp.dsl import Dataset, Input
+from kfp.dsl import Dataset, Input, PIPELINE_JOB_CREATE_TIME_UTC_PLACEHOLDER
 from pipelines import generate_query
 from bigquery_components import extract_bq_to_dataset
 
 CONTAINER_IMAGE_REGISTRY = os.environ["CONTAINER_IMAGE_REGISTRY"]
 VERTEX_PIPELINE_ROOT = os.environ["VERTEX_PIPELINE_ROOT"]
 RESOURCE_SUFFIX = os.environ.get("RESOURCE_SUFFIX", "default")
-TRAINING_IMAGE = f"{CONTAINER_IMAGE_REGISTRY}/training:{RESOURCE_SUFFIX}"
-SERVING_IMAGE = f"{CONTAINER_IMAGE_REGISTRY}/serving:{RESOURCE_SUFFIX}"
 TUNING_IMAGE = f"{CONTAINER_IMAGE_REGISTRY}/tuning:{RESOURCE_SUFFIX}"
 
 
@@ -77,6 +75,7 @@ def worker_pool_specs(
     worker pool specification with appropriate command arguments which depends on your
     tuning training script.
     """
+
     CMDARGS = [
         "tuning/tune.py",
         "--train-data",
@@ -191,7 +190,7 @@ def GetBestTrialOp(trials: list, study_spec_metrics: list) -> str:
     return study.Trial.to_json(best_trial)
 
 
-@dsl.pipeline(name="xgboost-train-pipeline")
+@dsl.pipeline(name="hyperparameter-tuning-pipeline")
 def pipeline(
     project_id: str = os.environ.get("VERTEX_PROJECT_ID"),
     project_location: str = os.environ.get("VERTEX_LOCATION"),
@@ -270,7 +269,9 @@ def pipeline(
 
     max_trial_count = 3
     parallel_trial_count = 3
-    base_output_directory = VERTEX_PIPELINE_ROOT
+    base_output_directory = (
+        f"{VERTEX_PIPELINE_ROOT}/hpt-{PIPELINE_JOB_CREATE_TIME_UTC_PLACEHOLDER}"
+    )
     study_spec_algorithm = "ALGORITHM_UNSPECIFIED"
     study_spec_measurement_selection_type = "BEST_MEASUREMENT"
     # --------------------------------------
@@ -352,7 +353,6 @@ def pipeline(
         hparams=hparams,
         tuning_container_image=TUNING_IMAGE,
     ).set_display_name("Worker Pool Specs")
-
     tuning = HyperparameterTuningJobRunOp(
         display_name="HPT JOB",
         project=project_id,
