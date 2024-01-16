@@ -1,0 +1,647 @@
+# PIPELINE DEFINITION
+# Name: turbo-prediction-pipeline
+# Description: Prediction pipeline which:
+#              1. Looks up the default model version (champion).
+#               2. Runs a batch prediction job with BigQuery as input and output
+#               3. Optionally monitors training-serving skew
+# Inputs:
+#    bq_location: str [Default: 'US']
+#    bq_source_uri: str [Default: 'bigquery-public-data.chicago_taxi_trips.taxi_trips']
+#    dataset: str [Default: 'turbo_templates']
+#    location: str [Default: 'europe-west2']
+#    machine_type: str [Default: 'n2-standard-4']
+#    max_replicas: int [Default: 10.0]
+#    min_replicas: int [Default: 3.0]
+#    model_name: str [Default: 'xgb_regressor']
+#    project: str [Default: 'dt-sky-mlops-hackathon-dev']
+#    timestamp: str [Default: '2022-12-01 00:00:00']
+components:
+  comp-bigquery-query-job:
+    executorLabel: exec-bigquery-query-job
+    inputDefinitions:
+      parameters:
+        encryption_spec_key_name:
+          defaultValue: ''
+          description: Describes the Cloud KMS encryption key that will be used to
+            protect destination BigQuery table. The BigQuery Service Account associated
+            with your project requires access to this encryption key. If encryption_spec_key_name
+            are both specified in here and in job_configuration_query, the value in
+            here will override the other one.
+          isOptional: true
+          parameterType: STRING
+        job_configuration_query:
+          defaultValue: {}
+          description: A json formatted string describing the rest of the job configuration.  For
+            more details, see https://cloud.google.com/bigquery/docs/reference/rest/v2/Job#JobConfigurationQuery
+          isOptional: true
+          parameterType: STRUCT
+        labels:
+          defaultValue: {}
+          description: 'The labels associated with this job. You can use these to
+            organize and group your jobs. Label keys and values can be no longer than
+            63 characters, can only containlowercase letters, numeric characters,
+            underscores and dashes. International characters are allowed. Label values
+            are optional. Label keys must start with a letter and each label in the
+            list must have a different key.
+
+            Example: { "name": "wrench", "mass": "1.3kg", "count": "3" }.'
+          isOptional: true
+          parameterType: STRUCT
+        location:
+          defaultValue: us-central1
+          description: Location for creating the BigQuery job. If not set, default
+            to `US` multi-region.  For more details, see https://cloud.google.com/bigquery/docs/locations#specifying_your_location
+          isOptional: true
+          parameterType: STRING
+        project:
+          defaultValue: '{{$.pipeline_google_cloud_project_id}}'
+          description: Project to run the BigQuery query job. Defaults to the project
+            in which the PipelineJob is run.
+          isOptional: true
+          parameterType: STRING
+        query:
+          defaultValue: ''
+          description: SQL query text to execute. Only standard SQL is supported.  If
+            query are both specified in here and in job_configuration_query, the value
+            in here will override the other one.
+          isOptional: true
+          parameterType: STRING
+        query_parameters:
+          defaultValue: []
+          description: jobs.query parameters for standard SQL queries.  If query_parameters
+            are both specified in here and in job_configuration_query, the value in
+            here will override the other one.
+          isOptional: true
+          parameterType: LIST
+    outputDefinitions:
+      artifacts:
+        destination_table:
+          artifactType:
+            schemaTitle: google.BQTable
+            schemaVersion: 0.0.1
+          description: Describes the table where the query results should be stored.
+            This property must be set for large results that exceed the maximum response
+            size. For queries that produce anonymous (cached) results, this field
+            will be populated by BigQuery.
+      parameters:
+        gcp_resources:
+          description: Serialized gcp_resources proto tracking the BigQuery job. For
+            more details, see https://github.com/kubeflow/pipelines/blob/master/components/google-cloud/google_cloud_pipeline_components/proto/README.md.
+          parameterType: STRING
+  comp-lookup-model:
+    executorLabel: exec-lookup-model
+    inputDefinitions:
+      parameters:
+        fail_on_model_not_found:
+          defaultValue: false
+          description: 'if set to True, raise runtime error if
+
+            model is not found'
+          isOptional: true
+          parameterType: BOOLEAN
+        location:
+          description: location of the Google Cloud project
+          parameterType: STRING
+        model_name:
+          description: display name of the model
+          parameterType: STRING
+        project:
+          description: project id of the Google Cloud project
+          parameterType: STRING
+    outputDefinitions:
+      artifacts:
+        model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+      parameters:
+        model_resource_name:
+          parameterType: STRING
+        training_dataset:
+          parameterType: STRUCT
+  comp-model-batch-predict:
+    executorLabel: exec-model-batch-predict
+    inputDefinitions:
+      artifacts:
+        model:
+          artifactType:
+            schemaTitle: system.Model
+            schemaVersion: 0.0.1
+          description: Input model to use for calculating predictions.
+      parameters:
+        destination_format:
+          description: 'E.g. "bigquery", "jsonl", "csv". See:
+
+            https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1beta1.types.BatchPredictionJob.OutputConfig'
+          parameterType: STRING
+        destination_uri:
+          description: bq:// or gs:// URI to store output predictions.
+          parameterType: STRING
+        instance_config:
+          description: 'Configuration defining how to transform batch prediction
+
+            input instances to the instances that the Model accepts. See:
+
+            https://cloud.google.com/vertex-ai/docs/reference/rest/v1beta1/projects.locations.batchPredictionJobs#instanceconfig'
+          isOptional: true
+          parameterType: STRUCT
+        job_display_name:
+          description: Name of the batch prediction job.
+          parameterType: STRING
+        location:
+          description: location of the Google Cloud project. Defaults to None.
+          parameterType: STRING
+        machine_type:
+          defaultValue: n1-standard-2
+          description: Machine type.
+          isOptional: true
+          parameterType: STRING
+        max_replica_count:
+          defaultValue: 1.0
+          description: Max replicat count.
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+        monitoring_alert_email_addresses:
+          description: Email addresses to send alerts to (optional).
+          isOptional: true
+          parameterType: LIST
+        monitoring_skew_config:
+          description: 'Configuration of training-serving skew. See:
+
+            https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1beta1.types.ModelMonitoringObjectiveConfig.TrainingPredictionSkewDetectionConfig'
+          isOptional: true
+          parameterType: STRUCT
+        monitoring_training_dataset:
+          description: 'Metadata of training dataset. See:
+
+            https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1beta1.types.ModelMonitoringObjectiveConfig.TrainingDataset'
+          isOptional: true
+          parameterType: STRUCT
+        notification_channels:
+          defaultValue: []
+          description: 'Notification channels to send alerts to (optional).
+
+            Format: projects/<project>/notificationChannels/<notification_channel>'
+          isOptional: true
+          parameterType: LIST
+        project:
+          description: project id of the Google Cloud project. Defaults to None.
+          parameterType: STRING
+        source_format:
+          description: 'E.g. "bigquery", "jsonl", "csv". See:
+
+            https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1beta1.types.BatchPredictionJob.InputConfig'
+          parameterType: STRING
+        source_uri:
+          description: bq:// URI or a list of gcs:// URIs to read input instances.
+          parameterType: STRING
+        starting_replica_count:
+          defaultValue: 1.0
+          description: Starting replica count.
+          isOptional: true
+          parameterType: NUMBER_INTEGER
+    outputDefinitions:
+      parameters:
+        gcp_resources:
+          parameterType: STRING
+deploymentSpec:
+  executors:
+    exec-bigquery-query-job:
+      container:
+        args:
+        - --type
+        - BigqueryQueryJob
+        - --project
+        - '{{$.inputs.parameters[''project'']}}'
+        - --location
+        - '{{$.inputs.parameters[''location'']}}'
+        - --payload
+        - '{"Concat": ["{", "\"configuration\": {", "\"query\": ", "{{$.inputs.parameters[''job_configuration_query'']}}",
+          ", \"labels\": ", "{{$.inputs.parameters[''labels'']}}", "}", "}"]}'
+        - --job_configuration_query_override
+        - '{"Concat": ["{", "\"query\": \"", "{{$.inputs.parameters[''query'']}}",
+          "\"", ", \"query_parameters\": ", "{{$.inputs.parameters[''query_parameters'']}}",
+          ", \"destination_encryption_configuration\": {", "\"kmsKeyName\": \"", "{{$.inputs.parameters[''encryption_spec_key_name'']}}",
+          "\"}", "}"]}'
+        - --gcp_resources
+        - '{{$.outputs.parameters[''gcp_resources''].output_file}}'
+        - --executor_input
+        - '{{$}}'
+        command:
+        - python3
+        - -u
+        - -m
+        - google_cloud_pipeline_components.container.v1.bigquery.query_job.launcher
+        image: gcr.io/ml-pipeline/google-cloud-pipeline-components:2.8.0
+    exec-lookup-model:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - lookup_model
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.4.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'google-cloud-aiplatform==1.30.1'\
+          \ && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef lookup_model(\n    model_name: str,\n    location: str,\n   \
+          \ project: str,\n    model: Output[Model],\n    fail_on_model_not_found:\
+          \ bool = False,\n) -> NamedTuple(\"Outputs\", [(\"model_resource_name\"\
+          , str), (\"training_dataset\", dict)]):\n    \"\"\"\n    Fetch a model given\
+          \ a model name (display name) and export to GCS.\n\n    Args:\n        model_name\
+          \ (str): display name of the model\n        location (str): location of\
+          \ the Google Cloud project\n        project (str): project id of the Google\
+          \ Cloud project\n        model (Output[Model]): a Vertex AI model\n    \
+          \    fail_on_model_not_found (bool): if set to True, raise runtime error\
+          \ if\n            model is not found\n\n    Returns:\n        str: Resource\
+          \ name of the found model. Empty string if model not found.\n    \"\"\"\n\
+          \n    import json\n    import logging\n    import os\n    from pathlib import\
+          \ Path\n    from google.cloud.aiplatform import Model\n\n    TRAINING_DATASET_INFO\
+          \ = \"training_dataset.json\"\n\n    logging.info(f\"listing models with\
+          \ display name {model_name}\")\n    models = Model.list(\n        filter=f'display_name=\"\
+          {model_name}\"',\n        location=location,\n        project=project,\n\
+          \    )\n    logging.info(f\"found {len(models)} model(s)\")\n\n    training_dataset\
+          \ = {}\n    model_resource_name = \"\"\n    if len(models) == 0:\n     \
+          \   logging.error(\n            f\"No model found with name {model_name}\
+          \ \"\n            + f\"(project: {project} location: {location})\"\n   \
+          \     )\n        if fail_on_model_not_found:\n            raise RuntimeError(f\"\
+          Failed as model was not found\")\n    elif len(models) == 1:\n        target_model\
+          \ = models[0]\n        model_resource_name = target_model.resource_name\n\
+          \        logging.info(f\"model display name: {target_model.display_name}\"\
+          )\n        logging.info(f\"model resource name: {target_model.resource_name}\"\
+          )\n        logging.info(f\"model uri: {target_model.uri}\")\n        model.uri\
+          \ = target_model.uri\n        model.metadata[\"resourceName\"] = target_model.resource_name\n\
+          \n        path = Path(model.path) / TRAINING_DATASET_INFO\n        logging.info(f\"\
+          Reading training dataset metadata: {path}\")\n\n        if os.path.exists(path):\n\
+          \            with open(path, \"r\") as fp:\n                training_dataset\
+          \ = json.load(fp)\n        else:\n            logging.warning(\"Training\
+          \ dataset metadata doesn't exist!\")\n    else:\n        raise RuntimeError(f\"\
+          Multiple models with name {model_name} were found.\")\n\n    return model_resource_name,\
+          \ training_dataset\n\n"
+        image: python:3.9
+    exec-model-batch-predict:
+      container:
+        args:
+        - --executor_input
+        - '{{$}}'
+        - --function_to_execute
+        - model_batch_predict
+        command:
+        - sh
+        - -c
+        - "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip ||\
+          \ python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1\
+          \ python3 -m pip install --quiet --no-warn-script-location 'kfp==2.4.0'\
+          \ '--no-deps' 'typing-extensions>=3.7.4,<5; python_version<\"3.9\"'  &&\
+          \  python3 -m pip install --quiet --no-warn-script-location 'google-cloud-aiplatform==1.30.1'\
+          \ 'google-cloud-pipeline-components==1.0.33' && \"$0\" \"$@\"\n"
+        - sh
+        - -ec
+        - 'program_path=$(mktemp -d)
+
+
+          printf "%s" "$0" > "$program_path/ephemeral_component.py"
+
+          _KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         "$program_path/ephemeral_component.py"                         "$@"
+
+          '
+        - "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import\
+          \ *\n\ndef model_batch_predict(\n    model: Input[Model],\n    gcp_resources:\
+          \ OutputPath(str),\n    job_display_name: str,\n    location: str,\n   \
+          \ project: str,\n    source_uri: str,\n    destination_uri: str,\n    source_format:\
+          \ str,\n    destination_format: str,\n    machine_type: str = \"n1-standard-2\"\
+          ,\n    starting_replica_count: int = 1,\n    max_replica_count: int = 1,\n\
+          \    monitoring_training_dataset: dict = None,\n    monitoring_alert_email_addresses:\
+          \ List[str] = None,\n    notification_channels: List[str] = [],\n    monitoring_skew_config:\
+          \ dict = None,\n    instance_config: dict = None,\n):\n    \"\"\"\n    Trigger\
+          \ a batch prediction job and enable monitoring.\n\n    Args:\n        model\
+          \ (Input[Model]): Input model to use for calculating predictions.\n    \
+          \    job_display_name: Name of the batch prediction job.\n        location\
+          \ (str): location of the Google Cloud project. Defaults to None.\n     \
+          \   project (str): project id of the Google Cloud project. Defaults to None.\n\
+          \        source_uri (str): bq:// URI or a list of gcs:// URIs to read input\
+          \ instances.\n        destination_uri (str): bq:// or gs:// URI to store\
+          \ output predictions.\n        source_format (str): E.g. \"bigquery\", \"\
+          jsonl\", \"csv\". See:\n            https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1beta1.types.BatchPredictionJob.InputConfig\n\
+          \        destination_format (str): E.g. \"bigquery\", \"jsonl\", \"csv\"\
+          . See:\n            https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1beta1.types.BatchPredictionJob.OutputConfig\n\
+          \        machine_type (str): Machine type.\n        starting_replica_count\
+          \ (int): Starting replica count.\n        max_replica_count (int): Max replicat\
+          \ count.\n        monitoring_skew_config (dict): Configuration of training-serving\
+          \ skew. See:\n            https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1beta1.types.ModelMonitoringObjectiveConfig.TrainingPredictionSkewDetectionConfig\n\
+          \        monitoring_alert_email_addresses (List[str]):\n            Email\
+          \ addresses to send alerts to (optional).\n        notification_channels\
+          \ (List[str]):\n            Notification channels to send alerts to (optional).\n\
+          \            Format: projects/<project>/notificationChannels/<notification_channel>\n\
+          \        monitoring_training_dataset (dict): Metadata of training dataset.\
+          \ See:\n            https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1beta1.types.ModelMonitoringObjectiveConfig.TrainingDataset\n\
+          \        instance_config (dict): Configuration defining how to transform\
+          \ batch prediction\n            input instances to the instances that the\
+          \ Model accepts. See:\n            https://cloud.google.com/vertex-ai/docs/reference/rest/v1beta1/projects.locations.batchPredictionJobs#instanceconfig\n\
+          \    Returns:\n        OutputPath: gcp_resources for Vertex AI UI integration.\n\
+          \    \"\"\"\n\n    import logging\n    import time\n\n    from functools\
+          \ import partial\n    from google.protobuf.json_format import ParseDict,\
+          \ MessageToJson\n    from google.cloud.aiplatform_v1beta1.services.job_service\
+          \ import JobServiceClient\n    from google.cloud.aiplatform_v1beta1.types\
+          \ import (\n        BatchPredictionJob,\n        GetBatchPredictionJobRequest,\n\
+          \    )\n    from google.cloud.aiplatform_v1beta1.types.job_state import\
+          \ JobState\n    from google_cloud_pipeline_components.container.v1.gcp_launcher.utils\
+          \ import (\n        error_util,\n    )\n    from google_cloud_pipeline_components.container.utils\
+          \ import execution_context\n    from google_cloud_pipeline_components.proto.gcp_resources_pb2\
+          \ import GcpResources\n\n    def send_cancel_request(client: JobServiceClient,\
+          \ batch_job_uri: str):\n        logging.info(\"Sending BatchPredictionJob\
+          \ cancel request\")\n        client.cancel_batch_prediction_job(name=batch_job_uri)\n\
+          \n    def is_job_successful(job_state: JobState) -> bool:\n        _JOB_SUCCESSFUL_STATES\
+          \ = [\n            JobState.JOB_STATE_SUCCEEDED,\n        ]\n        _JOB_FAILED_STATES\
+          \ = [\n            JobState.JOB_STATE_FAILED,\n            JobState.JOB_STATE_CANCELLED,\n\
+          \            JobState.JOB_STATE_EXPIRED,\n        ]\n\n        if job_state\
+          \ in _JOB_SUCCESSFUL_STATES:\n            logging.info(\n              \
+          \  f\"GetBatchPredictionJobRequest response state={job_state}. \"\n    \
+          \            \"Job completed\"\n            )\n            return True\n\
+          \        elif job_state in _JOB_FAILED_STATES:\n            raise RuntimeError(\n\
+          \                \"Job {} failed with error state: {}.\".format(response.name,\
+          \ job_state)\n            )\n        else:\n            logging.info(f\"\
+          Job {response.name} is in a non-final state {job_state}.\")\n        return\
+          \ False\n\n    _POLLING_INTERVAL_IN_SECONDS = 20\n    _CONNECTION_ERROR_RETRY_LIMIT\
+          \ = 5\n\n    api_endpoint = f\"{location}-aiplatform.googleapis.com\"\n\n\
+          \    input_config = {\"instancesFormat\": source_format}\n    output_config\
+          \ = {\"predictionsFormat\": destination_format}\n    if source_format ==\
+          \ \"bigquery\" and destination_format == \"bigquery\":\n        input_config[\"\
+          bigquerySource\"] = {\"inputUri\": source_uri}\n        output_config[\"\
+          bigqueryDestination\"] = {\"outputUri\": destination_uri}\n    else:\n \
+          \       input_config[\"gcsSource\"] = {\"uris\": [source_uri]}\n       \
+          \ output_config[\"gcsDestination\"] = {\"outputUriPrefix\": destination_uri}\n\
+          \n    message = {\n        \"displayName\": job_display_name,\n        \"\
+          model\": model.metadata[\"resourceName\"],\n        \"inputConfig\": input_config,\n\
+          \        \"outputConfig\": output_config,\n        \"dedicatedResources\"\
+          : {\n            \"machineSpec\": {\"machineType\": machine_type},\n   \
+          \         \"startingReplicaCount\": starting_replica_count,\n          \
+          \  \"maxReplicaCount\": max_replica_count,\n        },\n    }\n\n    if\
+          \ instance_config:\n        message[\"instanceConfig\"] = instance_config\n\
+          \n    if monitoring_training_dataset and monitoring_skew_config:\n     \
+          \   logging.info(\"Adding monitoring config to request\")\n        if not\
+          \ monitoring_alert_email_addresses:\n            monitoring_alert_email_addresses\
+          \ = []\n\n        message[\"modelMonitoringConfig\"] = {\n            \"\
+          alertConfig\": {\n                \"emailAlertConfig\": {\"userEmails\"\
+          : monitoring_alert_email_addresses},\n                \"notificationChannels\"\
+          : notification_channels,\n                \"enableLogging\": True,\n   \
+          \         },\n            \"objectiveConfigs\": [\n                {\n \
+          \                   \"trainingDataset\": monitoring_training_dataset,\n\
+          \                    \"trainingPredictionSkewDetectionConfig\": monitoring_skew_config,\n\
+          \                }\n            ],\n        }\n\n    request = ParseDict(message,\
+          \ BatchPredictionJob()._pb)\n\n    logging.info(f\"Submitting batch prediction\
+          \ job: {job_display_name}\")\n    logging.info(request)\n    client = JobServiceClient(client_options={\"\
+          api_endpoint\": api_endpoint})\n    response = client.create_batch_prediction_job(\n\
+          \        parent=f\"projects/{project}/locations/{location}\",\n        batch_prediction_job=request,\n\
+          \    )\n    logging.info(f\"Submitted batch prediction job: {response.name}\"\
+          )\n\n    # output GCP resource for Vertex AI UI integration\n    batch_job_resources\
+          \ = GcpResources()\n    dr = batch_job_resources.resources.add()\n    dr.resource_type\
+          \ = \"BatchPredictionJob\"\n    dr.resource_uri = response.name\n    with\
+          \ open(gcp_resources, \"w\") as f:\n        f.write(MessageToJson(batch_job_resources))\n\
+          \n    with execution_context.ExecutionContext(\n        on_cancel=partial(\n\
+          \            send_cancel_request,\n            api_endpoint,\n         \
+          \   response.name,\n        )\n    ):\n        retry_count = 0\n       \
+          \ while True:\n            try:\n                job_status_request = GetBatchPredictionJobRequest(\n\
+          \                    {\"name\": response.name}\n                )\n    \
+          \            job_state = client.get_batch_prediction_job(\n            \
+          \        request=job_status_request\n                ).state\n         \
+          \       retry_count = 0\n            except ConnectionError as err:\n  \
+          \              retry_count += 1\n                if retry_count <= _CONNECTION_ERROR_RETRY_LIMIT:\n\
+          \                    logging.warning(\n                        f\"ConnectionError\
+          \ ({err}) encountered when polling job: \"\n                        f\"\
+          {response.name}. Retrying.\"\n                    )\n                else:\n\
+          \                    error_util.exit_with_internal_error(\n            \
+          \            f\"Request failed after {_CONNECTION_ERROR_RETRY_LIMIT} retries.\"\
+          \n                    )\n            if is_job_successful(job_state):\n\
+          \                break\n            logging.info(\n                f\"Waiting\
+          \ for {_POLLING_INTERVAL_IN_SECONDS} seconds for next poll.\"\n        \
+          \    )\n            time.sleep(_POLLING_INTERVAL_IN_SECONDS)\n\n"
+        image: python:3.9
+pipelineInfo:
+  description: "Prediction pipeline which:\n1. Looks up the default model version\
+    \ (champion).\n 2. Runs a batch prediction job with BigQuery as input and output\n\
+    \ 3. Optionally monitors training-serving skew"
+  name: turbo-prediction-pipeline
+root:
+  dag:
+    tasks:
+      bigquery-query-job:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-bigquery-query-job
+        inputs:
+          parameters:
+            location:
+              componentInputParameter: bq_location
+            pipelinechannel--bq_location:
+              componentInputParameter: bq_location
+            pipelinechannel--bq_source_uri:
+              componentInputParameter: bq_source_uri
+            pipelinechannel--dataset:
+              componentInputParameter: dataset
+            pipelinechannel--project:
+              componentInputParameter: project
+            pipelinechannel--timestamp:
+              componentInputParameter: timestamp
+            project:
+              componentInputParameter: project
+            query:
+              runtimeValue:
+                constant: "-- Create dataset if it doesn't exist\nCREATE SCHEMA IF\
+                  \ NOT EXISTS `{{$.inputs.parameters['pipelinechannel--project']}}.{{$.inputs.parameters['pipelinechannel--dataset']}}`\n\
+                  \  OPTIONS (\n    description = 'Chicago Taxi Trips with Turbo Template',\n\
+                  \    location = '{{$.inputs.parameters['pipelinechannel--bq_location']}}');\n\
+                  \n-- Create (or replace) table with preprocessed data\nDROP TABLE\
+                  \ IF EXISTS `{{$.inputs.parameters['pipelinechannel--project']}}.{{$.inputs.parameters['pipelinechannel--dataset']}}.prep_prediction_ankitha`;\n\
+                  CREATE TABLE `{{$.inputs.parameters['pipelinechannel--project']}}.{{$.inputs.parameters['pipelinechannel--dataset']}}.prep_prediction_ankitha`\
+                  \ AS (\nWITH start_timestamps AS (\nSELECT\n\tIF('{{$.inputs.parameters['pipelinechannel--timestamp']}}'\
+                  \ = '',\n\tCURRENT_DATETIME(),\n\tCAST('{{$.inputs.parameters['pipelinechannel--timestamp']}}'\
+                  \ AS DATETIME)) AS start_timestamp\n)\n-- Ingest data between 2\
+                  \ and 3 months ago\n,filtered_data AS (\n    SELECT\n    *\n   \
+                  \ FROM `{{$.inputs.parameters['pipelinechannel--bq_source_uri']}}`,\
+                  \ start_timestamps\n    WHERE\n         DATE(trip_start_timestamp)\
+                  \ BETWEEN\n         DATE_SUB(DATE(CAST(start_timestamps.start_timestamp\
+                  \ AS DATETIME)), INTERVAL 3 MONTH) AND\n         DATE_SUB(DATE(start_timestamp),\
+                  \ INTERVAL 2 MONTH)\n)\n-- Use the average trip_seconds as a replacement\
+                  \ for NULL or 0 values\n,mean_time AS (\n    SELECT CAST(avg(trip_seconds)\
+                  \ AS INT64) as avg_trip_seconds\n    FROM filtered_data\n)\n\nSELECT\n\
+                  \    CAST(EXTRACT(DAYOFWEEK FROM trip_start_timestamp) AS FLOAT64)\
+                  \ AS dayofweek,\n    CAST(EXTRACT(HOUR FROM trip_start_timestamp)\
+                  \ AS FLOAT64) AS hourofday,\n    ST_DISTANCE(\n        ST_GEOGPOINT(pickup_longitude,\
+                  \ pickup_latitude),\n        ST_GEOGPOINT(dropoff_longitude, dropoff_latitude))\
+                  \ AS trip_distance,\n    trip_miles,\n    CAST( CASE WHEN trip_seconds\
+                  \ is NULL then m.avg_trip_seconds\n               WHEN trip_seconds\
+                  \ <= 0 then m.avg_trip_seconds\n               ELSE trip_seconds\n\
+                  \               END AS FLOAT64) AS trip_seconds,\n    payment_type,\n\
+                  \    company,\n    \nFROM filtered_data AS t, mean_time AS m\nWHERE\n\
+                  \    trip_miles > 0 AND fare > 0 AND fare < 1500\n    \n       \
+                  \ AND `fare` IS NOT NULL\n    \n        AND `trip_start_timestamp`\
+                  \ IS NOT NULL\n    \n        AND `pickup_longitude` IS NOT NULL\n\
+                  \    \n        AND `pickup_latitude` IS NOT NULL\n    \n       \
+                  \ AND `dropoff_longitude` IS NOT NULL\n    \n        AND `dropoff_latitude`\
+                  \ IS NOT NULL\n    \n        AND `payment_type` IS NOT NULL\n  \
+                  \  \n        AND `company` IS NOT NULL\n    \n);"
+        taskInfo:
+          name: Ingest & preprocess data
+      lookup-model:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-lookup-model
+        inputs:
+          parameters:
+            fail_on_model_not_found:
+              runtimeValue:
+                constant: true
+            location:
+              componentInputParameter: location
+            model_name:
+              componentInputParameter: model_name
+            project:
+              componentInputParameter: project
+        taskInfo:
+          name: Look up champion model
+      model-batch-predict:
+        cachingOptions:
+          enableCache: true
+        componentRef:
+          name: comp-model-batch-predict
+        dependentTasks:
+        - bigquery-query-job
+        - lookup-model
+        inputs:
+          artifacts:
+            model:
+              taskOutputArtifact:
+                outputArtifactKey: model
+                producerTask: lookup-model
+          parameters:
+            destination_format:
+              runtimeValue:
+                constant: bigquery
+            destination_uri:
+              runtimeValue:
+                constant: bq://{{$.inputs.parameters['pipelinechannel--project']}}.{{$.inputs.parameters['pipelinechannel--dataset']}}
+            instance_config:
+              runtimeValue:
+                constant:
+                  instanceType: object
+            job_display_name:
+              runtimeValue:
+                constant: turbo-template-predict-job
+            location:
+              componentInputParameter: location
+            machine_type:
+              componentInputParameter: machine_type
+            max_replica_count:
+              componentInputParameter: max_replicas
+            monitoring_alert_email_addresses:
+              runtimeValue:
+                constant: []
+            monitoring_skew_config:
+              runtimeValue:
+                constant:
+                  defaultSkewThreshold:
+                    value: 0.001
+            monitoring_training_dataset:
+              taskOutputParameter:
+                outputParameterKey: training_dataset
+                producerTask: lookup-model
+            notification_channels:
+              runtimeValue:
+                constant: []
+            pipelinechannel--dataset:
+              componentInputParameter: dataset
+            pipelinechannel--project:
+              componentInputParameter: project
+            project:
+              componentInputParameter: project
+            source_format:
+              runtimeValue:
+                constant: bigquery
+            source_uri:
+              runtimeValue:
+                constant: bq://{{$.inputs.parameters['pipelinechannel--project']}}.{{$.inputs.parameters['pipelinechannel--dataset']}}.prep_prediction_ankitha
+            starting_replica_count:
+              componentInputParameter: min_replicas
+        taskInfo:
+          name: Run prediction job
+  inputDefinitions:
+    parameters:
+      bq_location:
+        defaultValue: US
+        description: location of dataset in BigQuery
+        isOptional: true
+        parameterType: STRING
+      bq_source_uri:
+        defaultValue: bigquery-public-data.chicago_taxi_trips.taxi_trips
+        description: '`<project>.<dataset>.<table>` of ingestion data in BigQuery'
+        isOptional: true
+        parameterType: STRING
+      dataset:
+        defaultValue: turbo_templates
+        description: dataset id to store staging data & predictions in BigQuery
+        isOptional: true
+        parameterType: STRING
+      location:
+        defaultValue: europe-west2
+        description: location of the Google Cloud project
+        isOptional: true
+        parameterType: STRING
+      machine_type:
+        defaultValue: n2-standard-4
+        description: 'Machine type to be used for Vertex Batch
+
+          Prediction. Example machine_types - n1-standard-4, n1-standard-16 etc.'
+        isOptional: true
+        parameterType: STRING
+      max_replicas:
+        defaultValue: 10.0
+        description: 'Maximum no of machines to distribute the
+
+          Vertex Batch Prediction job for horizontal scalability'
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      min_replicas:
+        defaultValue: 3.0
+        description: 'Minimum no of machines to distribute the
+
+          Vertex Batch Prediction job for horizontal scalability'
+        isOptional: true
+        parameterType: NUMBER_INTEGER
+      model_name:
+        defaultValue: xgb_regressor
+        description: name of model
+        isOptional: true
+        parameterType: STRING
+      project:
+        defaultValue: dt-sky-mlops-hackathon-dev
+        description: project id of the Google Cloud project
+        isOptional: true
+        parameterType: STRING
+      timestamp:
+        defaultValue: '2022-12-01 00:00:00'
+        description: "Optional. Empty or a specific timestamp in ISO 8601 format\n\
+          (YYYY-MM-DDThh:mm:ss.sss\xB1hh:mm or YYYY-MM-DDThh:mm:ss).\nIf any time\
+          \ part is missing, it will be regarded as zero"
+        isOptional: true
+        parameterType: STRING
+schemaVersion: 2.1.0
+sdkVersion: kfp-2.4.0
