@@ -68,7 +68,7 @@ def pipeline(
     """
 
     queries_folder = pathlib.Path(__file__).parent / "queries"
-    table = f"prep_prediction_{RESOURCE_SUFFIX}"
+    table = f"prep_prediction_{RESOURCE_SUFFIX.replace('.', '')}"
 
     prep_query = generate_query(
         queries_folder / "preprocessing.sql",

@@ -110,7 +110,7 @@ def pipeline(
         test_data_gcs_uri (str): Optional. GCS URI of static held-out test dataset.
     """
 
-    table = f"prep_training_{RESOURCE_SUFFIX}"
+    table = f"prep_training_{RESOURCE_SUFFIX.replace('.', '')}"
     queries_folder = pathlib.Path(__file__).parent / "queries"
 
     prep_query = generate_query(

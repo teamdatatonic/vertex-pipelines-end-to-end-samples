@@ -57,7 +57,7 @@ steps:
           --tag=${TAG_NAME}; \
         done
     env:
-      - RESOURCE_SUFFIX=default
+      - RESOURCE_SUFFIX=${TAG_NAME}
 
 options:
   logging: CLOUD_LOGGING_ONLY

@@ -20,11 +20,11 @@ This document describes the full process from making a change to your pipeline c
 
 ## Pre-requisites
 
-- Suitable GCP environments set up - see the [README](../README.md)
+- Suitable GCP environments set up - see the [README](README.md)
 - This repo forked / used as a template for a new GitHub repo
 - CI/CD set up - see the instructions [here](cloudbuild/README.md)
 - Access set up for the BigQuery datasets used in the example pipelines
-- Git repo cloned locally (or in a notebook environment) and local setup complete - see [here](/README.md#local-setup)
+- Git repo cloned locally (or in a notebook environment) and local setup complete - see [here](/docs/README.md#local-setup)
 
 ## Making your changes to the pipelines
 
