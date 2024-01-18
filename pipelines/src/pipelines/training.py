@@ -15,10 +15,10 @@ import pathlib
 from os import environ as env
 
 from google_cloud_pipeline_components.v1.bigquery import BigqueryQueryJobOp
+from jinja2 import Template
 from kfp import dsl
 from kfp.dsl import Dataset, Input, Metrics, Model, Output
 
-from pipelines.utils.query import generate_query
 from components import extract_table, upload_model
 
 
@@ -111,10 +111,11 @@ def pipeline(
     """
 
     table = f"prep_training_{RESOURCE_SUFFIX}"
-    queries_folder = pathlib.Path(__file__).parent / "queries"
+    prep_query_path = pathlib.Path(__file__) / "queries" / "preprocessing.sql"
 
-    prep_query = generate_query(
-        queries_folder / "preprocessing.sql",
+    with open(prep_query_path, "r") as f:
+        template = Template(f.read())
+    prep_query = template.render(
         source=bq_source_uri,
         location=bq_location,
         dataset=f"{project}.{dataset}",

@@ -15,9 +15,9 @@ import pathlib
 from os import environ as env
 
 from google_cloud_pipeline_components.v1.bigquery import BigqueryQueryJobOp
+from jinja2 import Template
 from kfp import dsl
 
-from pipelines.utils.query import generate_query
 from components import lookup_model, model_batch_predict
 
 
@@ -67,11 +67,12 @@ def pipeline(
             Vertex Batch Prediction job for horizontal scalability
     """
 
-    queries_folder = pathlib.Path(__file__).parent / "queries"
     table = f"prep_prediction_{RESOURCE_SUFFIX}"
+    prep_query_path = pathlib.Path(__file__) / "queries" / "preprocessing.sql"
 
-    prep_query = generate_query(
-        queries_folder / "preprocessing.sql",
+    with open(prep_query_path, "r") as f:
+        template = Template(f.read())
+    prep_query = template.render(
         source=bq_source_uri,
         location=bq_location,
         dataset=f"{project}.{dataset}",
