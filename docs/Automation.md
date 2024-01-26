@@ -14,35 +14,96 @@ See the License for the specific language governing permissions and
 limitations under the License.
  -->
 
-# CI/CD pipelines
+# Automation
 
-## Overview
-
-There are six CI/CD pipelines
+This repo includes the following CI/CD pipelines which can be used in Cloud Build:
 
 1. `pr-checks.yaml` - runs pre-commit checks and unit tests on the custom KFP components, and checks that the ML pipelines (training and prediction) can compile.
-1. `trigger-tests.yaml` - runs unit tests for the Cloud Function located in [terraform/modules/cloudfunction](/terraform/modules/cloudfunction/). If you don't need to change this code, you can ignore this CI/CD pipeline.
 1. `e2e-test.yaml` - runs end-to-end tests of the training and prediction pipeline.
 1. `release.yaml` - compiles training and prediction pipelines, then copies the compiled pipelines to the chosen GCS destination (versioned by git tag).
 1. `terraform-plan.yaml` - Checks the Terraform configuration under `terraform/envs/<env>` (e.g. `terraform/envs/test`), and produces a summary of any proposed changes that will be applied on merge to the main branch.
 1. `terraform-apply.yaml` - Applies the Terraform configuration under `terraform/envs/<env>` (e.g. `terraform/envs/test`).
 
-## Setting up the CI/CD pipelines
-
-### Which project should I use for Cloud Build?
+## Choose the right project
 
 We recommend to use a separate `admin` project, since the CI/CD pipelines operate across all the different environments (dev/test/prod).
 
-### Connecting your repository to Google Cloud Build
+Before you run the below commands, set the environment variables `GCP_PROJECT_ID` and `GCP_REGION` as follows:
 
-See the [Google Cloud Documentation](https://cloud.google.com/build/docs/automating-builds/create-manage-triggers) for details on how to link your repository to Cloud Build, and set up triggers.
+```
+export GCP_PROJECT_ID=my-gcp-project
+export GCP_REGION=us-central1
+```
 
-### Cloud Build service account
+## Create service accounts
 
-Your Cloud Build pipelines will need a service account to use. Create a new service account in the _admin_ project named `cloud-build`. Then, give it these permissions in the different Google Cloud projects:
+Two service accounts are required
 
-* dev/test/prod projects - `roles/owner`
-* admin project - `roles/logging.logWriter`
+- One for running Cloud Build jobs
+- One for running Vertex Pipelines - **already included in terraform**
+
+Run the command below:
+
+```
+gcloud iam service-accounts create cloud-build \
+--description="Service account for running Cloud Build" \
+--display-name="Custom Cloud Build SA" \
+--project=${GCP_PROJECT_ID}
+```
+
+## Create IAM permissions
+
+The service account we have created for Cloud Build requires the following project roles:
+
+- roles/logging.logWriter
+- roles/storage.admin
+- roles/aiplatform.user
+- roles/artifactregistry.writer
+
+```
+gcloud projects add-iam-policy-binding $GCP_PROJECT_ID --member="serviceAccount:cloud-build@${GCP_PROJECT_ID}.iam.gserviceaccount.com" --role="roles/logging.logWriter" --condition=None
+gcloud projects add-iam-policy-binding $GCP_PROJECT_ID --member="serviceAccount:cloud-build@${GCP_PROJECT_ID}.iam.gserviceaccount.com" --role="roles/storage.admin" --condition=None
+gcloud projects add-iam-policy-binding $GCP_PROJECT_ID --member="serviceAccount:cloud-build@${GCP_PROJECT_ID}.iam.gserviceaccount.com" --role="roles/aiplatform.user" --condition=None
+gcloud projects add-iam-policy-binding $GCP_PROJECT_ID --member="serviceAccount:cloud-build@${GCP_PROJECT_ID}.iam.gserviceaccount.com" --role="roles/artifactregistry.writer" --condition=None
+```
+
+It also requires the "Service Account User" role for the Vertex Pipelines service account ([docs here](https://cloud.google.com/iam/docs/impersonating-service-accounts#impersonate-sa-level)):
+
+```
+gcloud iam service-accounts add-iam-policy-binding vertex-pipelines@${GCP_PROJECT_ID}.iam.gserviceaccount.com \
+--member="serviceAccount:cloud-build@${GCP_PROJECT_ID}.iam.gserviceaccount.com" \
+--role="roles/iam.serviceAccountUser" \
+--project=${GCP_PROJECT_ID}
+```
+
+## Connect to GitHub
+
+Follow the [Google Cloud documentation](https://cloud.google.com/build/docs/automating-builds/github/connect-repo-github?generation=2nd-gen) to connect the GitHub repository to Cloud Build.
+
+## Set up triggers
+
+There are three Cloud Build triggers to set up.
+
+1. `pr-checks.yaml`
+2. `trigger-tests.yaml` 
+3. `e2e-test.yaml`
+
+For each of the above, create a Cloud Build trigger with the following settings:
+
+- Each one should be triggered on Pull Request to the `main` branch
+- Enable comment control (select `Required` under `Comment Control`)
+- Service account email: `cloud-build@<PROJECT ID>.iam.gserviceaccount.com`
+- Configuration -> Type: `Cloud Build configuration file (yaml or json)`
+- Configuration -> Location: Repository
+- Cloud Build configuration file location: `cloudbuild/pr-checks.yaml` / `cloudbuild/trigger-tests.yaml` / `cloudbuild/e2e-test.yaml`
+- Substitution variables - per table below
+
+|  Cloud Build Trigger          |  Substitution variables             |
+|-------------------------------|-------------------------------------|
+| `pr-checks.yaml`              |                                     |
+| `trigger-tests.yaml`          |                                     |
+| `e2e-test.yaml`               |  _TEST_ENABLE_PIPELINE_CACHING = `False`<br>_TEST_VERTEX_LOCATION = `<GCP REGION (same as buckets etc above)>`<br>_TEST_VERTEX_PIPELINE_ROOT = `gs://<GCP PROJECT ID>-pl-root`<br>_TEST_VERTEX_PROJECT_ID = `<GCP PROJECT ID>`<br>_TEST_VERTEX_SA_EMAIL = `vertex-pipelines@<GCP PROJECT ID>.iam.gserviceaccount.com` |
+
 
 ## Recommended triggers
 

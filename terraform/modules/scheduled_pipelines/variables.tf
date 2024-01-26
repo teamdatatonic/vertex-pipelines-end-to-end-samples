@@ -45,24 +45,27 @@ variable "time_zone" {
   default     = "UTC"
 }
 
-variable "topic_name" {
-  description = "The full resource name for the Cloud Pub/Sub topic to which messages will be published when a job is delivered. ~>NOTE: The topic name must be in the same format as required by PubSub's PublishRequest.name, e.g. projects/my-project/topics/my-topic"
-  type        = string
-}
-
-variable "template_path" {
+variable "pipeline_template_uri" {
   description = "GCS path to the compiled KFP pipeline to be triggered by the Cloud Scheduler job."
   type        = string
-}
-
-variable "enable_caching" {
-  description = "Whether to turn on caching for the Vertex Pipeline runs. If this is not set, defaults to the compile time settings, which are True for all tasks by default, while users may specify different caching options for individual tasks. If this is set, the setting applies to all tasks in the pipeline."
-  type        = bool
-  default     = null
 }
 
 variable "pipeline_parameters" {
   description = "The mapping from runtime parameter names to its values that control the Vertex Pipeline run."
   type        = map(any)
-  default     = {}
+}
+
+variable "pipeline_service_account_email" {
+  description = "Email of service account for running Vertex AI Pipelines."
+  type        = string
+}
+
+variable "pipeline_service_account_name" {
+  description = "Name of service account for running Vertex AI Pipelines."
+  type        = string
+}
+
+variable "pipeline_output_dir" {
+  description = "Cloud Storage URL for Vertex AI Pipeline output files."
+  type        = string
 }

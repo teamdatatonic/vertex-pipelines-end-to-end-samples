@@ -23,13 +23,23 @@ resource "google_cloud_scheduler_job" "scheduled_pipeline" {
   schedule    = var.schedule
   time_zone   = var.time_zone
 
-  pubsub_target {
-    topic_name = var.topic_name
-    data = base64encode(jsonencode({
-      template_path       = var.template_path,
-      display_name        = var.name,
-      enable_caching      = var.enable_caching,
-      pipeline_parameters = var.pipeline_parameters,
+  http_target {
+    http_method = "POST"
+    uri         = "https://${var.region}-aiplatform.googleapis.com/v1/projects/${var.project_id}/locations/${var.region}/pipelineJobs"
+    body = base64encode(jsonencode({
+      templateUri    = var.pipeline_template_uri,
+      serviceAccount = var.pipeline_service_account_email,
+      runtimeConfig = {
+        gcsOutputDirectory = var.pipeline_output_dir,
+        parameterValues    = var.pipeline_parameters,
+      }
     }))
+    headers = {
+      "Content-Type" = "application/json"
+    }
+    oauth_token {
+      service_account_email = google_service_account.cloud_scheduler.email
+      scope                 = "https://www.googleapis.com/auth/cloud-platform"
+    }
   }
 }

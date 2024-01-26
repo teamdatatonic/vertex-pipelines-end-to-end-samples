@@ -44,17 +44,17 @@ module "vertex_deployment" {
 
 # Cloud Scheduler jobs (for triggering pipelines)
 module "scheduler" {
-  for_each            = var.cloud_schedulers_config
-  source              = "../../modules/scheduled_pipelines"
-  project_id          = var.project_id
-  region              = var.region
-  name                = each.key
-  description         = lookup(each.value, "description", null)
-  schedule            = each.value.schedule
-  time_zone           = lookup(each.value, "time_zone", "UTC")
-  topic_name          = module.vertex_deployment.pubsub_topic_id
-  template_path       = each.value.template_path
-  enable_caching      = lookup(each.value, "enable_caching", null)
-  pipeline_parameters = lookup(each.value, "pipeline_parameters", null)
-  depends_on          = [module.vertex_deployment]
+  for_each                       = var.cloud_schedulers_config
+  source                         = "../../modules/scheduled_pipelines"
+  project_id                     = var.project_id
+  region                         = var.region
+  pipeline_output_dir            = module.vertex_deployment.pipeline_root_bucket.url
+  pipeline_service_account_email = module.vertex_deployment.vertex_pipelines_sa.email
+  pipeline_service_account_name  = module.vertex_deployment.vertex_pipelines_sa.name
+  name                           = each.key
+  description                    = lookup(each.value, "description", null)
+  schedule                       = each.value.schedule
+  time_zone                      = lookup(each.value, "time_zone", "UTC")
+  pipeline_parameters            = lookup(each.value, "pipeline_parameters", null)
+  pipeline_template_uri          = each.value.pipeline_template_uri
 }

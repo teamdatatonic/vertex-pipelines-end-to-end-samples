@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-terraform {
-  required_version = ">= 0.13"
-  required_providers {
-
-    google = {
-      source  = "hashicorp/google"
-      version = ">= 4.3.0"
+cloud_schedulers_config = {
+  training = {
+    description           = "Schedule my Vertex AI Pipeline"
+    schedule              = "0 0 * * 0"
+    time_zone             = "Etc/UTC"
+    pipeline_template_uri = "https://<LOCATION>2-kfp.pkg.dev/<PROJECT>/vertex-pipelines/<PIPELINE NAME>/<GIT TAG>"
+    pipeline_parameters = {
+      # key = value
     }
-
   }
+  # prediction = { ... }
 }
