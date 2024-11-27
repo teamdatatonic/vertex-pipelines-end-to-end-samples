@@ -166,9 +166,14 @@ For details on setting up CI/CD, see [this guide](./docs/Automation.md).
 
 ## Issues with Vertex AI Custom Code Service Agent
 
-If you run custom training code to train a custom-trained model, then the [Vertex AI Custom Code Service Agent](https://cloud.google.com/vertex-ai/docs/general/access-control) will be used. In those cases, the agent is created only when you first try to run custom training code which means you can't assign permissions to the agent, like artifact registry reader, from the very beginning. To tackle this, you can use [this guide](https://github.com/teamdatatonic/terraform-google-vertex-cc-service-agent). This repo uses the curl command to create a simple custom training job which triggers the creation of the service agent. You can also edit that code to use ```gcloud ai custom-jobs create``` to create the job if you want.
+If you run custom training code to train a custom-trained model, then the [Vertex AI Custom Code Service Agent](https://cloud.google.com/vertex-ai/docs/general/access-control) will be used. 
+In those cases, the agent is created only when you first try to run custom training code which means you can't assign permissions to the agent, like artifact registry reader, from the very beginning. 
+To tackle this, you can use [this guide](https://github.com/teamdatatonic/terraform-google-vertex-cc-service-agent). 
+This repo uses the curl command to create a simple custom training job which triggers the creation of the service agent. 
+You can also edit that code to use `gcloud ai custom-jobs create` to create the job if you want.
 
-Alternatively, Google has another method of triggering the creation of service agents that is currently in pre-ga that can be used instead of the above solution. You can read more about it [here](https://cloud.google.com/iam/docs/create-service-agents#create) 
+Alternatively, Google has another method of triggering the creation of service agents that is currently in pre-GA that can be used instead of the above solution. 
+You can read more about it [here](https://cloud.google.com/iam/docs/create-service-agents#create).
 
 ## Putting it all together
 
