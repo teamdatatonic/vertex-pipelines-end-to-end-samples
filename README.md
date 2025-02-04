@@ -49,7 +49,6 @@ There are four different Google Cloud projects in use
 * `admin` - separate Google Cloud project for setting up CI/CD in Cloud Build (since the CI/CD pipelines operate across the different environments)
 
 Vertex Pipelines are scheduled using Google Cloud Scheduler. 
-Cloud Scheduler emits a Pub/Sub message that triggers a Cloud Function, which in turn triggers the Vertex Pipeline to run. 
 _In future, this will be replaced with the Vertex Pipelines Scheduler (once there is a Terraform resource for it)._
 
 ## Setup
@@ -178,5 +177,3 @@ You can read more about it [here](https://cloud.google.com/iam/docs/create-servi
 ## Putting it all together
 
 For a full walkthrough of the journey from changing the ML pipeline code to having it scheduled and running in production, please see the guide [here](./docs/Production.md).
-
-We value your contribution, see [this guide](./docs/Contribution.md) for contributing to this project.

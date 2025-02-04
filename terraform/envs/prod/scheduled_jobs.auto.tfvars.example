@@ -14,10 +14,15 @@
  * limitations under the License.
  */
 
-output "pipeline_root_bucket" {
-  value = google_storage_bucket.pipeline_root_bucket
-}
-
-output "vertex_pipelines_sa" {
-  value = google_service_account.pipelines_sa
+cloud_schedulers_config = {
+  training = {
+    description           = "Schedule my Vertex AI Pipeline"
+    schedule              = "0 0 * * 0"
+    time_zone             = "Etc/UTC"
+    pipeline_template_uri = "https://<LOCATION>2-kfp.pkg.dev/<PROJECT>/vertex-pipelines/<PIPELINE NAME>/<GIT TAG>"
+    pipeline_parameters = {
+      # key = value
+    }
+  }
+  # prediction = { ... }
 }
