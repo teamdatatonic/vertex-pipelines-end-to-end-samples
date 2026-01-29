@@ -97,9 +97,9 @@ run: ## Run a pipeline. Set pipeline=<training|prediction>. Optionally set compi
 	echo "################################################################################" && \
 	echo "# Run $$pipeline pipeline" && \
 	echo "################################################################################" && \
-	cd pipelines/src && \
+	cd pipelines && \
 	ENABLE_PIPELINE_CACHING=$$cache poetry run python -m pipelines.utils.trigger_pipeline \
-		--template_path=pipelines/${pipeline}.yaml --display_name=${pipeline} --wait=${wait}
+		--template_path=src/pipelines/${pipeline}.yaml --display_name=${pipeline} --wait=${wait}
 
 training: ## Run training pipeline. Rebuilds training and prediction images. Supports same options as run.
 	@$(MAKE) run pipeline=training
