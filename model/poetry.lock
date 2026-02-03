@@ -17,7 +17,7 @@ name = "anyio"
 version = "4.12.1"
 description = "High-level concurrency and networking framework on top of asyncio or Trio"
 optional = false
-python-versions = ">=3.12.8"
+python-versions = ">=3.9"
 groups = ["prediction"]
 files = [
     {file = "anyio-4.12.1-py3-none-any.whl", hash = "sha256:d405828884fc140aa80a3c667b8beed277f1dfedec42ba031bd6ac3db606ab6c"},
@@ -48,7 +48,7 @@ name = "cffi"
 version = "2.0.0"
 description = "Foreign Function Interface for Python calling C code."
 optional = false
-python-versions = ">=3.12.8"
+python-versions = ">=3.9"
 groups = ["prediction"]
 markers = "platform_python_implementation != \"PyPy\""
 files = [
@@ -297,7 +297,7 @@ name = "cryptography"
 version = "46.0.3"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
 optional = false
-python-versions = "!=3.12.8.0,!=3.12.8.1,>=3.8"
+python-versions = "!=3.9.0,!=3.9.1,>=3.8"
 groups = ["prediction"]
 files = [
     {file = "cryptography-46.0.3-cp311-abi3-macosx_10_9_universal2.whl", hash = "sha256:109d4ddfadf17e8e7779c39f9b18111a09efb969a301a31e987416a0191ed93a"},
@@ -357,7 +357,7 @@ files = [
 ]
 
 [package.dependencies]
-cffi = {version = ">=2.0.0", markers = "python_full_version >= \"3.12.8.0\" and platform_python_implementation != \"PyPy\""}
+cffi = {version = ">=2.0.0", markers = "python_full_version >= \"3.9.0\" and platform_python_implementation != \"PyPy\""}
 
 [package.extras]
 docs = ["sphinx (>=5.3.0)", "sphinx-inline-tabs", "sphinx-rtd-theme (>=3.0.0)"]
@@ -493,7 +493,7 @@ name = "google-crc32c"
 version = "1.8.0"
 description = "A python wrapper of the C library 'Google CRC32C'"
 optional = false
-python-versions = ">=3.12.8"
+python-versions = ">=3.9"
 groups = ["prediction"]
 files = [
     {file = "google_crc32c-1.8.0-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:0470b8c3d73b5f4e3300165498e4cf25221c7eb37f1159e221d1825b6df8a7ff"},
@@ -600,7 +600,7 @@ name = "joblib"
 version = "1.5.3"
 description = "Lightweight pipelining with Python functions"
 optional = false
-python-versions = ">=3.12.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
     {file = "joblib-1.5.3-py3-none-any.whl", hash = "sha256:5fc3c5039fc5ca8c0276333a188bbd59d6b7ab37fe6632daa76bc7f9ec18e713"},
@@ -769,7 +769,7 @@ python-dateutil = ">=2.8.2"
 tzdata = {version = "*", markers = "sys_platform == \"win32\" or sys_platform == \"emscripten\""}
 
 [package.extras]
-all = ["PyQt5 (>=5.15.9)", "SQLAlchemy (>=2.0.36)", "adbc-driver-postgresql (>=1.2.0)", "adbc-driver-sqlite (>=1.2.0)", "beautifulsoup4 (>=4.12.3)", "bottleneck (>=1.4.2)", "fastparquet (>=2024.11.0)", "fsspec (>=2024.10.0)", "gcsfs (>=2024.10.0)", "html5lib (>=1.1)", "hypothesis (>=6.116.0)", "jinja2 (>=3.1.5)", "lxml (>=5.3.0)", "matplotlib (>=3.12.8.3)", "numba (>=0.60.0)", "numexpr (>=2.10.2)", "odfpy (>=1.4.1)", "openpyxl (>=3.1.5)", "psycopg2 (>=2.9.10)", "pyarrow (>=13.0.0)", "pyiceberg (>=0.8.1)", "pymysql (>=1.1.1)", "pyreadstat (>=1.2.8)", "pytest (>=8.3.4)", "pytest-xdist (>=3.6.1)", "python-calamine (>=0.3.0)", "pytz (>=2024.2)", "pyxlsb (>=1.0.10)", "qtpy (>=2.4.2)", "s3fs (>=2024.10.0)", "scipy (>=1.14.1)", "tables (>=3.10.1)", "tabulate (>=0.9.0)", "xarray (>=2024.10.0)", "xlrd (>=2.0.1)", "xlsxwriter (>=3.2.0)", "zstandard (>=0.23.0)"]
+all = ["PyQt5 (>=5.15.9)", "SQLAlchemy (>=2.0.36)", "adbc-driver-postgresql (>=1.2.0)", "adbc-driver-sqlite (>=1.2.0)", "beautifulsoup4 (>=4.12.3)", "bottleneck (>=1.4.2)", "fastparquet (>=2024.11.0)", "fsspec (>=2024.10.0)", "gcsfs (>=2024.10.0)", "html5lib (>=1.1)", "hypothesis (>=6.116.0)", "jinja2 (>=3.1.5)", "lxml (>=5.3.0)", "matplotlib (>=3.9.3)", "numba (>=0.60.0)", "numexpr (>=2.10.2)", "odfpy (>=1.4.1)", "openpyxl (>=3.1.5)", "psycopg2 (>=2.9.10)", "pyarrow (>=13.0.0)", "pyiceberg (>=0.8.1)", "pymysql (>=1.1.1)", "pyreadstat (>=1.2.8)", "pytest (>=8.3.4)", "pytest-xdist (>=3.6.1)", "python-calamine (>=0.3.0)", "pytz (>=2024.2)", "pyxlsb (>=1.0.10)", "qtpy (>=2.4.2)", "s3fs (>=2024.10.0)", "scipy (>=1.14.1)", "tables (>=3.10.1)", "tabulate (>=0.9.0)", "xarray (>=2024.10.0)", "xlrd (>=2.0.1)", "xlsxwriter (>=3.2.0)", "zstandard (>=0.23.0)"]
 aws = ["s3fs (>=2024.10.0)"]
 clipboard = ["PyQt5 (>=5.15.9)", "qtpy (>=2.4.2)"]
 compression = ["zstandard (>=0.23.0)"]
@@ -785,7 +785,7 @@ mysql = ["SQLAlchemy (>=2.0.36)", "pymysql (>=1.1.1)"]
 output-formatting = ["jinja2 (>=3.1.5)", "tabulate (>=0.9.0)"]
 parquet = ["pyarrow (>=13.0.0)"]
 performance = ["bottleneck (>=1.4.2)", "numba (>=0.60.0)", "numexpr (>=2.10.2)"]
-plot = ["matplotlib (>=3.12.8.3)"]
+plot = ["matplotlib (>=3.9.3)"]
 postgresql = ["SQLAlchemy (>=2.0.36)", "adbc-driver-postgresql (>=1.2.0)", "psycopg2 (>=2.9.10)"]
 pyarrow = ["pyarrow (>=13.0.0)"]
 spss = ["pyreadstat (>=1.2.8)"]
@@ -817,7 +817,7 @@ name = "protobuf"
 version = "6.33.4"
 description = ""
 optional = false
-python-versions = ">=3.12.8"
+python-versions = ">=3.9"
 groups = ["prediction"]
 files = [
     {file = "protobuf-6.33.4-cp310-abi3-win32.whl", hash = "sha256:918966612c8232fc6c24c78e1cd89784307f5814ad7506c308ee3cf86662850d"},
@@ -877,7 +877,7 @@ name = "pydantic"
 version = "2.12.5"
 description = "Data validation using Python type hints"
 optional = false
-python-versions = ">=3.12.8"
+python-versions = ">=3.9"
 groups = ["prediction"]
 files = [
     {file = "pydantic-2.12.5-py3-none-any.whl", hash = "sha256:e561593fccf61e8a20fc46dfc2dfe075b8be7d0188df33f221ad1f0139180f9d"},
@@ -892,14 +892,14 @@ typing-inspection = ">=0.4.2"
 
 [package.extras]
 email = ["email-validator (>=2.0.0)"]
-timezone = ["tzdata ; python_version >= \"3.12.8\" and platform_system == \"Windows\""]
+timezone = ["tzdata ; python_version >= \"3.9\" and platform_system == \"Windows\""]
 
 [[package]]
 name = "pydantic-core"
 version = "2.41.5"
 description = "Core functionality for Pydantic validation and serialization"
 optional = false
-python-versions = ">=3.12.8"
+python-versions = ">=3.9"
 groups = ["prediction"]
 files = [
     {file = "pydantic_core-2.41.5-cp310-cp310-macosx_10_12_x86_64.whl", hash = "sha256:77b63866ca88d804225eaa4af3e664c5faf3568cea95360d21f4725ab6e07146"},
@@ -1048,7 +1048,7 @@ name = "requests"
 version = "2.32.5"
 description = "Python HTTP for Humans."
 optional = false
-python-versions = ">=3.12.8"
+python-versions = ">=3.9"
 groups = ["prediction"]
 files = [
     {file = "requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6"},
@@ -1256,7 +1256,7 @@ name = "threadpoolctl"
 version = "3.6.0"
 description = "threadpoolctl"
 optional = false
-python-versions = ">=3.12.8"
+python-versions = ">=3.9"
 groups = ["main"]
 files = [
     {file = "threadpoolctl-3.6.0-py3-none-any.whl", hash = "sha256:43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb"},
@@ -1266,9 +1266,9 @@ files = [
 [[package]]
 name = "typing-extensions"
 version = "4.15.0"
-description = "Backported and Experimental Type Hints for Python 3.12.8+"
+description = "Backported and Experimental Type Hints for Python 3.9+"
 optional = false
-python-versions = ">=3.12.8"
+python-versions = ">=3.9"
 groups = ["prediction"]
 files = [
     {file = "typing_extensions-4.15.0-py3-none-any.whl", hash = "sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"},
@@ -1280,7 +1280,7 @@ name = "typing-inspection"
 version = "0.4.2"
 description = "Runtime typing introspection tools"
 optional = false
-python-versions = ">=3.12.8"
+python-versions = ">=3.9"
 groups = ["prediction"]
 files = [
     {file = "typing_inspection-0.4.2-py3-none-any.whl", hash = "sha256:4ed1cacbdc298c220f1bd249ed5287caa16f34d44ef4e9c3d0cbad5b521545e7"},
@@ -1308,7 +1308,7 @@ name = "urllib3"
 version = "2.6.3"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
 optional = false
-python-versions = ">=3.12.8"
+python-versions = ">=3.9"
 groups = ["prediction"]
 files = [
     {file = "urllib3-2.6.3-py3-none-any.whl", hash = "sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4"},
