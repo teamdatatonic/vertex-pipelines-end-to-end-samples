@@ -16,9 +16,15 @@ import base64
 import json
 import os
 import re
-from distutils.util import strtobool
 from google.cloud import aiplatform
 from kfp.registry import RegistryClient
+
+
+def strtobool(value: str) -> bool:
+    value = value.lower()
+    if value in ("y", "yes", "on", "1", "true", "t"):
+        return True
+    return False
 
 
 def cf_handler(event, context):
