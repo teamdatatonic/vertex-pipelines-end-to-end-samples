@@ -17,10 +17,10 @@ from google_cloud_pipeline_components.types.artifact_types import VertexModel
 
 
 @component(
-    base_image="python:3.9",
+    base_image="python:3.12.8",
     packages_to_install=[
-        "google-cloud-aiplatform==1.30.1",
-        "google-cloud-pipeline-components==2.1.0",
+        "google-cloud-aiplatform==1.135.0",
+        "google-cloud-pipeline-components==2.22.0",
     ],
 )
 def upload_model(

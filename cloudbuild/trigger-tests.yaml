@@ -13,7 +13,7 @@
 # limitations under the License.
 ---
 steps:
-  - name: 'python:3.9'
+  - name: 'python:3.12.8'
     dir: /workspace/terraform/modules/cloudfunction
     entrypoint: /bin/sh
     args:

@@ -32,7 +32,7 @@ steps:
 
   # Install poetry, install deps, compile pipelines
   - id: compile-and-publish-pipelines
-    name: python:3.9
+    name: python:3.12.8
     entrypoint: /bin/sh
     args:
       - -c

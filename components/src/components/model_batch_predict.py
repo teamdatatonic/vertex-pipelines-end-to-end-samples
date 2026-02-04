@@ -17,10 +17,10 @@ from typing import List
 
 
 @component(
-    base_image="python:3.9",
+    base_image="python:3.12.8",
     packages_to_install=[
-        "google-cloud-aiplatform==1.30.1",
-        "google-cloud-pipeline-components==1.0.33",
+        "google-cloud-aiplatform==1.135.0",
+        "google-cloud-pipeline-components==2.22.0",
     ],
 )
 def model_batch_predict(

@@ -1,4 +1,4 @@
-<!-- 
+<!--
 Copyright 2023 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,7 +23,7 @@ _AKA "Vertex AI Turbo Templates"_
 ## Introduction
 
 This repository provides a reference implementation of [Vertex Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/) for creating a production-ready MLOps solution on Google Cloud.
-You can take this repository as a starting point you own ML use cases. 
+You can take this repository as a starting point for your own ML use cases.
 The implementation includes:
 
 * **Infrastructure-as-Code** using Terraform for a typical dev/test/prod setup of Vertex AI and other relevant services
@@ -48,8 +48,8 @@ There are four different Google Cloud projects in use
 * `prod` - production environment
 * `admin` - separate Google Cloud project for setting up CI/CD in Cloud Build (since the CI/CD pipelines operate across the different environments)
 
-Vertex Pipelines are scheduled using Google Cloud Scheduler. 
-Cloud Scheduler emits a Pub/Sub message that triggers a Cloud Function, which in turn triggers the Vertex Pipeline to run. 
+Vertex Pipelines are scheduled using Google Cloud Scheduler.
+Cloud Scheduler emits a Pub/Sub message that triggers a Cloud Function, which in turn triggers the Vertex Pipeline to run.
 _In future, this will be replaced with the Vertex Pipelines Scheduler (once there is a Terraform resource for it)._
 
 ## Setup
@@ -57,7 +57,7 @@ _In future, this will be replaced with the Vertex Pipelines Scheduler (once ther
 **Prerequisites:**
 
 - [Terraform](https://www.terraform.io/) for managing cloud infrastructure
-- [tfswitch](https://tfswitch.warrensbox.com/) to automatically choose and download an appropriate Terraform version (recommended) 
+- [tfswitch](https://tfswitch.warrensbox.com/) to automatically choose and download an appropriate Terraform version (recommended)
 - [Pyenv](https://github.com/pyenv/pyenv#installation) for managing Python versions
 - [Poetry](https://python-poetry.org/) for managing Python dependencies
 - [Google Cloud SDK (gcloud)](https://cloud.google.com/sdk/docs/quickstart)
@@ -88,7 +88,7 @@ gcloud services enable cloudresourcemanager.googleapis.com serviceusage.googleap
 make deploy env=dev
 ```
 
-More details about infrastructure is explained in [this guide](docs/Infrastructure.md).
+More details about infrastructure are explained in [this guide](docs/Infrastructure.md).
 It describes the scheduling of pipelines and how to tear down infrastructure.
 
 **Install dependencies:**
@@ -114,7 +114,7 @@ gcloud auth application-default login
 
 This repository contains example ML training and prediction pipelines which are explained in [this guide](docs/Pipelines.md).
 
-**Build containers:** The [model/](/model/) directory contains the code for custom training and prediction container images, including the model training script at [model/training/train.py](model/training/train.py). 
+**Build containers:** The [model/](/model/) directory contains the code for custom training and prediction container images, including the model training script at [model/training/train.py](model/training/train.py).
 You can modify this to suit your own use case.
 Build the training and prediction container images and push them to Artifact Registry with:
 
@@ -133,7 +133,7 @@ Optionally specify the `images` variable to only build one of the images.
 Execute the following command to run through steps 1-3:
 
 ```bash
-make run pipeline=training [ build=<true|false> ] [ compile=<true|false> ] [ cache=<true|false> ] [ wait=<true|false> ] 
+make run pipeline=training [ build=<true|false> ] [ compile=<true|false> ] [ cache=<true|false> ] [ wait=<true|false> ]
 ```
 
 The command has the following true/false flags:
@@ -153,7 +153,7 @@ make prediction
 ## Test
 
 Unit tests are performed using [pytest](https://docs.pytest.org).
-The unit tests are run on each pull request. 
+The unit tests are run on each pull request.
 To run them locally you can execute the following command and optionally enable or disable testing of components:
 
 ```
@@ -166,13 +166,13 @@ For details on setting up CI/CD, see [this guide](./docs/Automation.md).
 
 ## Issues with Vertex AI Custom Code Service Agent
 
-If you run custom training code to train a custom-trained model, then the [Vertex AI Custom Code Service Agent](https://cloud.google.com/vertex-ai/docs/general/access-control) will be used. 
-In those cases, the agent is created only when you first try to run custom training code which means you can't assign permissions to the agent, like artifact registry reader, from the very beginning. 
-To tackle this, you can use [this guide](https://github.com/teamdatatonic/terraform-google-vertex-cc-service-agent). 
-This repo uses the curl command to create a simple custom training job which triggers the creation of the service agent. 
+If you run custom training code to train a custom-trained model, then the [Vertex AI Custom Code Service Agent](https://cloud.google.com/vertex-ai/docs/general/access-control) will be used.
+In those cases, the agent is created only when you first try to run custom training code which means you can't assign permissions to the agent, like artifact registry reader, from the very beginning.
+To tackle this, you can use [this guide](https://github.com/teamdatatonic/terraform-google-vertex-cc-service-agent).
+This repo uses the curl command to create a simple custom training job which triggers the creation of the service agent.
 You can also edit that code to use `gcloud ai custom-jobs create` to create the job if you want.
 
-Alternatively, Google has another method of triggering the creation of service agents that is currently in pre-GA that can be used instead of the above solution. 
+Alternatively, Google has another method of triggering the creation of service agents that is currently in pre-GA that can be used instead of the above solution.
 You can read more about it [here](https://cloud.google.com/iam/docs/create-service-agents#create).
 
 ## Putting it all together

@@ -58,8 +58,8 @@ compile: ## Compile pipeline. Set pipeline=<training|prediction>.
 	@echo "################################################################################" && \
 	echo "# Compile $$pipeline pipeline" && \
 	echo "################################################################################" && \
-	cd pipelines/src && \
-	poetry run kfp dsl compile --py pipelines/${pipeline}.py --output pipelines/${pipeline}.yaml --function pipeline
+	cd pipelines && \
+	poetry run kfp dsl compile --py src/pipelines/${pipeline}.py --output src/pipelines/${pipeline}.yaml --function pipeline
 
 images ?= training prediction
 build: ## Build and push container(s). Set images=<training and/or prediction> (default="training prediction").
@@ -75,7 +75,7 @@ build: ## Build and push container(s). Set images=<training and/or prediction> (
 		--gcs-source-staging-dir=gs://${VERTEX_PROJECT_ID}-staging/source \
 		--substitutions=_DOCKER_TARGET=$$image,_DESTINATION_IMAGE_URI=${CONTAINER_IMAGE_REGISTRY}/$$image:${RESOURCE_SUFFIX} \
 		--suppress-logs ; \
-	done 
+	done
 
 compile ?= true
 build ?= true
@@ -97,9 +97,9 @@ run: ## Run a pipeline. Set pipeline=<training|prediction>. Optionally set compi
 	echo "################################################################################" && \
 	echo "# Run $$pipeline pipeline" && \
 	echo "################################################################################" && \
-	cd pipelines/src && \
+	cd pipelines && \
 	ENABLE_PIPELINE_CACHING=$$cache poetry run python -m pipelines.utils.trigger_pipeline \
-		--template_path=pipelines/${pipeline}.yaml --display_name=${pipeline} --wait=${wait}
+		--template_path=src/pipelines/${pipeline}.yaml --display_name=${pipeline} --wait=${wait}
 
 training: ## Run training pipeline. Rebuilds training and prediction images. Supports same options as run.
 	@$(MAKE) run pipeline=training
