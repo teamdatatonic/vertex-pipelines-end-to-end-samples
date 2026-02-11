@@ -25,7 +25,7 @@ from sklearn.preprocessing import StandardScaler, OrdinalEncoder, OneHotEncoder
 from xgboost import XGBRegressor
 
 from .utils import indices_in_list, save_metrics, save_monitoring_info, split_xy
-
+from .training_config import TrainingConfig
 
 # used for monitoring during prediction time
 TRAINING_DATASET_INFO = "training_dataset.json"
@@ -43,25 +43,30 @@ def train(
     output_test_path: str,
     output_model: str,
     output_metrics: str,
-    hparams: dict,
+    config: TrainingConfig,
 ):
 
     logging.info("Read csv files into dataframes")
     df = pd.read_csv(input_path)
 
     logging.info("Split dataframes")
-    label = hparams.pop("label")
 
     if input_test_path:
         # if static test data is used, only split into train & valid dataframes
         if input_test_path.startswith("gs://"):
             input_test_path = "/gcs/" + input_test_path[5:]
-        df_train, df_valid = train_test_split(df, test_size=0.2, random_state=1)
+        df_train, df_valid = train_test_split(
+            df, **config.get_split_params().get("train_test_split")
+        )
         df_test = pd.read_csv(input_test_path)
     else:
         # otherwise, split into train, valid, and test dataframes
-        df_train, df_test = train_test_split(df, test_size=0.2, random_state=1)
-        df_train, df_valid = train_test_split(df_train, test_size=0.25, random_state=1)
+        df_train, df_test = train_test_split(
+            df, **config.get_split_params().get("train_test_split")
+        )
+        df_train, df_valid = train_test_split(
+            df_train, **config.get_split_params().get("train_valid_split")
+        )
 
     # create output folders
     for x in [output_metrics, output_train_path, output_test_path, output_test_path]:
@@ -72,9 +77,9 @@ def train(
     df_valid.to_csv(output_valid_path, index=False)
     df_test.to_csv(output_test_path, index=False)
 
-    X_train, y_train = split_xy(df_train, label)
-    X_valid, y_valid = split_xy(df_valid, label)
-    X_test, y_test = split_xy(df_test, label)
+    X_train, y_train = split_xy(df_train, config.label)
+    X_valid, y_valid = split_xy(df_valid, config.label)
+    X_test, y_test = split_xy(df_test, config.label)
 
     logging.info("Get the number of unique categories for ordinal encoded columns")
     ordinal_columns = X_train[ORD_COLS]
@@ -109,7 +114,7 @@ def train(
     logging.info("Build sklearn preprocessing steps")
     preprocesser = ColumnTransformer(transformers=all_transformers)
     logging.info("Build sklearn pipeline with XGBoost model")
-    xgb_model = XGBRegressor(**hparams)
+    xgb_model = XGBRegressor(**config.get_model_params())
 
     pipeline = Pipeline(
         steps=[("feature_engineering", preprocesser), ("train_model", xgb_model)]
@@ -133,5 +138,7 @@ def train(
 
     save_metrics(y_test, y_pred, output_metrics)
     save_monitoring_info(
-        output_train_path, label, f"{output_model}/{TRAINING_DATASET_INFO}"
+        output_train_path,
+        config.label,
+        f"{output_model}/{TRAINING_DATASET_INFO}",
     )

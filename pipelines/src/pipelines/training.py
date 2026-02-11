@@ -21,10 +21,10 @@ from kfp.dsl import Dataset, Input, Metrics, Model, Output
 from pipelines.utils.query import generate_query
 from components import extract_table, upload_model
 
+from model.training.training_config import TrainingConfig
 
-LABEL = "total_fare"
-PRIMARY_METRIC = "rootMeanSquaredError"
-HPARAMS = dict(
+config = TrainingConfig(
+    label="total_fare",
     n_estimators=200,
     early_stopping_rounds=10,
     objective="reg:squarederror",
@@ -32,8 +32,16 @@ HPARAMS = dict(
     learning_rate=0.3,
     min_split_loss=0,
     max_depth=6,
-    label=LABEL,
+    train_test_split_size=0.2,
+    train_valid_split_size=0.25,
+    train_test_random_state=1,
+    train_valid_random_state=1,
 )
+LABEL = config.label
+MODEL_PARAMS = config.get_model_params()
+SPLIT_PARAMS = config.get_split_params()
+PRIMARY_METRIC = "rootMeanSquaredError"
+
 RESOURCE_SUFFIX = env.get("RESOURCE_SUFFIX", "default")
 TRAINING_IMAGE = f"{env['CONTAINER_IMAGE_REGISTRY']}/training:{RESOURCE_SUFFIX}"
 PREDICTION_IMAGE = f"{env['CONTAINER_IMAGE_REGISTRY']}/prediction:{RESOURCE_SUFFIX}"
@@ -43,7 +51,7 @@ PREDICTION_IMAGE = f"{env['CONTAINER_IMAGE_REGISTRY']}/prediction:{RESOURCE_SUFF
 def train(
     input_data: Input[Dataset],
     input_test_path: str,
-    hparams: dict,
+    config: TrainingConfig,
     train_data: Output[Dataset],
     valid_data: Output[Dataset],
     test_data: Output[Dataset],
@@ -61,8 +69,8 @@ def train(
                 input_name="input_test_path",
                 then=["--input_test_path", input_test_path],
             ),
-            "--hparams",
-            hparams,
+            "--config",
+            config.model_dump_json(),
             "--output_train_path",
             train_data.path,
             "--output_valid_path",
@@ -141,8 +149,8 @@ def pipeline(
 
     train_op = train(
         input_data=data_op.outputs["data"],
+        config=config,
         input_test_path=test_data_gcs_uri,
-        hparams=HPARAMS,
     ).set_display_name("Train model")
 
     upload_model(
