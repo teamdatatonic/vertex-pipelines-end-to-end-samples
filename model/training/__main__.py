@@ -32,7 +32,7 @@ parser.add_argument("--output_model", default=os.getenv("AIP_MODEL_DIR"), type=s
 parser.add_argument("--output_metrics", type=str, required=True)
 parser.add_argument("--config", type=str, required=True)
 args = vars(parser.parse_args())
-config_dict = json.loads(args.config)
+config_dict = json.loads(args["config"])
 config = TrainingConfig(**config_dict)
 
 train(
