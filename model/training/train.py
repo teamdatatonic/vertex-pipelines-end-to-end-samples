@@ -109,6 +109,7 @@ def train(
     preprocesser = ColumnTransformer(transformers=all_transformers)
     logging.info("Build sklearn pipeline with XGBoost model")
     xgb_model = XGBRegressor(**hparams)
+    xgb_model.set_fit_request(eval_set=True)
 
     pipeline = Pipeline(
         steps=[("feature_engineering", preprocesser), ("train_model", xgb_model)]
