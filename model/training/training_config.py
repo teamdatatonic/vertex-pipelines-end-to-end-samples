@@ -36,7 +36,7 @@ class TrainingConfig(BaseModel):
                 "random_state": self.train_test_random_state,
             },
             "train_valid_split": {
-                "validation_size": self.train_valid_split_size,
+                "test_size": self.train_valid_split_size,
                 "random_state": self.train_valid_random_state,
             },
         }
