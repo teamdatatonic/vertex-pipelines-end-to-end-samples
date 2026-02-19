@@ -21,7 +21,7 @@ from kfp.dsl import Dataset, Input, Metrics, Model, Output
 from pipelines.utils.query import generate_query
 from components import extract_table, upload_model
 
-from model.training.training_config import TrainingConfig
+from pipelines.training_config import TrainingConfig
 
 config = TrainingConfig(
     label="total_fare",
