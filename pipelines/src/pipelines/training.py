@@ -51,7 +51,7 @@ PREDICTION_IMAGE = f"{env['CONTAINER_IMAGE_REGISTRY']}/prediction:{RESOURCE_SUFF
 def train(
     input_data: Input[Dataset],
     input_test_path: str,
-    config: TrainingConfig,
+    config: str,
     train_data: Output[Dataset],
     valid_data: Output[Dataset],
     test_data: Output[Dataset],
@@ -70,7 +70,7 @@ def train(
                 then=["--input_test_path", input_test_path],
             ),
             "--config",
-            config.model_dump_json(),
+            config,
             "--output_train_path",
             train_data.path,
             "--output_valid_path",
@@ -149,7 +149,7 @@ def pipeline(
 
     train_op = train(
         input_data=data_op.outputs["data"],
-        config=config,
+        config=config.model_dump_json(),
         input_test_path=test_data_gcs_uri,
     ).set_display_name("Train model")
 
