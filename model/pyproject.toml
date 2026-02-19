@@ -3,8 +3,6 @@ name = "model"
 version = "0.1.0"
 description = ""
 authors = ["Your Name <you@example.com>"]
-readme = "README.md"
-package-mode = false
 
 
 [tool.poetry.dependencies]
