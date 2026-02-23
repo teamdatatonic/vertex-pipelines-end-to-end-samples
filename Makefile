@@ -47,7 +47,9 @@ install: ## Set up local Python environment for development.
 	@echo "################################################################################" && \
 	echo "# Install Python dependencies" && \
 	echo "################################################################################" && \
-	cd model && \
+	cd config && \
+	poetry install && \
+	cd ../model && \
 	poetry install --no-root && \
 	cd ../pipelines && \
 	poetry install --with dev && \
@@ -66,10 +68,10 @@ build: ## Build and push container(s). Set images=<training and/or prediction> (
 	@echo "################################################################################" && \
 	echo "# Build $$images image(s)" && \
 	echo "################################################################################" && \
-	cd model && \
 	for image in $$images ; do \
 		echo "Build $$image image" && \
 		gcloud builds submit . \
+		--config=model/cloudbuild.yaml \
 		--region=${VERTEX_LOCATION} \
 		--project=${VERTEX_PROJECT_ID} \
 		--gcs-source-staging-dir=gs://${VERTEX_PROJECT_ID}-staging/source \

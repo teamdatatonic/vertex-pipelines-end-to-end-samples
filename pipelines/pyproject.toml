@@ -19,6 +19,7 @@ google-cloud-aiplatform = ">=1.135.0"
 google-cloud-storage = ">=3.8.0"
 google-cloud-pipeline-components = "^2.22.0"
 components = { path = "../components", develop = true }
+shared = {path = "../config", develop = true}
 kfp = "^2.15.2"
 pyyaml = "6.0.1"
 

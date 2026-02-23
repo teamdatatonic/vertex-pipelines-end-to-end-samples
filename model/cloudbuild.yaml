@@ -17,4 +17,5 @@ steps:
     args:
       - --destination=${_DESTINATION_IMAGE_URI}
       - --target=${_DOCKER_TARGET}
+      - --dockerfile=model/Dockerfile
       - --cache=true
