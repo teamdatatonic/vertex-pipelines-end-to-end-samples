@@ -24,7 +24,7 @@ RUN pip install poetry==${POETRY_VERSION}
 # Build context is the repo root so both model/ and config/ are available.
 # WORKDIR /model ensures the ../config path dependency resolves to /config.
 WORKDIR /model
-COPY model/pyproject.toml model/poetry.lock .
+COPY model/pyproject.toml model/poetry.lock ./
 COPY config /config
 
 FROM builder AS training
