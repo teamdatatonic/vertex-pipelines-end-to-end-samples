@@ -13,7 +13,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.12"
+python = ">=3.12,<4.0"
 Jinja2 = ">=3.0.1,<4.0.0"
 google-cloud-aiplatform = ">=1.135.0"
 google-cloud-storage = ">=3.8.0"
