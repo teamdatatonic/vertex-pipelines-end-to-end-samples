@@ -1,4 +1,12 @@
 from pydantic import BaseModel
+from typing import Any
+
+
+class PreprocessingStep(BaseModel):
+    encoder: str
+    columns: list[str]
+    kwargs: dict[str, Any] = {}
+    per_column: bool = False
 
 
 class TrainingConfig(BaseModel):
@@ -15,6 +23,7 @@ class TrainingConfig(BaseModel):
     train_valid_split_size: float
     train_test_random_state: int
     train_valid_random_state: int
+    preprocessing: list[PreprocessingStep]
 
     def get_model_params(self) -> dict:
         """Extract only XGBoost model parameters."""

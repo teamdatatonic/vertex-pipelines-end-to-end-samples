@@ -1,4 +1,20 @@
 from pydantic import BaseModel
+from typing import Any
+
+import sklearn.preprocessing as sk_pre
+
+ENCODER_REGISTRY = {
+    "StandardScaler": sk_pre.StandardScaler,
+    "OrdinalEncoder": sk_pre.OrdinalEncoder,
+    "OneHotEncoder": sk_pre.OneHotEncoder,
+}
+
+
+class PreprocessingStep(BaseModel):
+    encoder: str
+    columns: list[str]
+    kwargs: dict[str, Any] = {}
+    per_column: bool = False
 
 
 class TrainingConfig(BaseModel):
@@ -15,6 +31,7 @@ class TrainingConfig(BaseModel):
     train_valid_split_size: float
     train_test_random_state: int
     train_valid_random_state: int
+    preprocessing: list[PreprocessingStep]
 
     def get_model_params(self) -> dict:
         """Extract only XGBoost model parameters."""
@@ -41,7 +58,28 @@ class TrainingConfig(BaseModel):
             },
         }
 
+    def get_transformers(self, X_train) -> list[tuple]:
+        """Build ColumnTransformer tuples driven entirely by the preprocessing config.
 
-# TODO: Add preprocessing configuration
-# Future enhancement: Make feature columns and preprocessing strategies configurable
-# def get_preprocess_params(self) -> dict:
+        For per_column steps, one transformer tuple is created per column.
+        OrdinalEncoder automatically receives unknown_value set to the number
+        of unique categories seen in training data (required for handle_unknown).
+        """
+        col_list = X_train.columns.tolist()
+        transformers = []
+        for step in self.preprocessing:
+            EncoderClass = ENCODER_REGISTRY[step.encoder]
+            col_indices = [col_list.index(col) for col in step.columns]
+            if step.per_column:
+                for col, idx in zip(step.columns, col_indices):
+                    kwargs = dict(step.kwargs)
+                    if step.encoder == "OrdinalEncoder":
+                        kwargs["unknown_value"] = X_train[col].nunique()
+                    transformers.append(
+                        (f"{step.encoder} for {col}", EncoderClass(**kwargs), [idx])
+                    )
+            else:
+                transformers.append(
+                    (step.encoder, EncoderClass(**step.kwargs), col_indices)
+                )
+        return transformers

@@ -21,18 +21,13 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, OrdinalEncoder, OneHotEncoder
 from xgboost import XGBRegressor
 
-from .utils import indices_in_list, save_metrics, save_monitoring_info, split_xy
+from .utils import save_metrics, save_monitoring_info, split_xy
 from .training_config import TrainingConfig
 
 # used for monitoring during prediction time
 TRAINING_DATASET_INFO = "training_dataset.json"
-# numeric/categorical features in Chicago trips dataset to be preprocessed
-NUM_COLS = ["dayofweek", "hourofday", "trip_distance", "trip_miles", "trip_seconds"]
-ORD_COLS = ["company"]
-OHE_COLS = ["payment_type"]
 
 
 def train(
@@ -81,35 +76,8 @@ def train(
     X_valid, y_valid = split_xy(df_valid, config.label)
     X_test, y_test = split_xy(df_test, config.label)
 
-    logging.info("Get the number of unique categories for ordinal encoded columns")
-    ordinal_columns = X_train[ORD_COLS]
-    n_unique_cat = ordinal_columns.nunique()
-
-    logging.info("Get indices of columns in base data")
-    col_list = X_train.columns.tolist()
-    num_indices = indices_in_list(NUM_COLS, col_list)
-    cat_indices_onehot = indices_in_list(OHE_COLS, col_list)
-    cat_indices_ordinal = indices_in_list(ORD_COLS, col_list)
-
-    ordinal_transformers = [
-        (
-            f"ordinal encoding for {ord_col}",
-            OrdinalEncoder(
-                handle_unknown="use_encoded_value", unknown_value=n_unique_cat[ord_col]
-            ),
-            [ord_index],
-        )
-        for ord_col in ORD_COLS
-        for ord_index in cat_indices_ordinal
-    ]
-    all_transformers = [
-        ("numeric_scaling", StandardScaler(), num_indices),
-        (
-            "one_hot_encoding",
-            OneHotEncoder(handle_unknown="ignore"),
-            cat_indices_onehot,
-        ),
-    ] + ordinal_transformers
+    logging.info("Build transformer list from config")
+    all_transformers = config.get_transformers(X_train)
 
     logging.info("Build sklearn preprocessing steps")
     preprocesser = ColumnTransformer(transformers=all_transformers)

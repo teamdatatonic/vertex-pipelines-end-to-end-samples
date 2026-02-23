@@ -21,7 +21,7 @@ from kfp.dsl import Dataset, Input, Metrics, Model, Output
 from pipelines.utils.query import generate_query
 from components import extract_table, upload_model
 
-from pipelines.training_config import TrainingConfig
+from pipelines.training_config import PreprocessingStep, TrainingConfig
 
 config = TrainingConfig(
     label="total_fare",
@@ -36,6 +36,23 @@ config = TrainingConfig(
     train_valid_split_size=0.25,
     train_test_random_state=1,
     train_valid_random_state=1,
+    preprocessing=[
+        PreprocessingStep(
+            encoder="StandardScaler",
+            columns=["dayofweek", "hourofday", "trip_distance", "trip_miles", "trip_seconds"],
+        ),
+        PreprocessingStep(
+            encoder="OneHotEncoder",
+            columns=["payment_type"],
+            kwargs={"handle_unknown": "ignore"},
+        ),
+        PreprocessingStep(
+            encoder="OrdinalEncoder",
+            columns=["company"],
+            kwargs={"handle_unknown": "use_encoded_value"},
+            per_column=True,
+        ),
+    ],
 )
 LABEL = config.label
 MODEL_PARAMS = config.get_model_params()
