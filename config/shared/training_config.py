@@ -24,7 +24,7 @@ class TrainingConfig(BaseModel):
     train_test_random_state: int
     train_valid_random_state: int
     preprocessing: list[PreprocessingStep]
-    model: Callable[..., Any]
+    model: dict[str, Callable[..., Any]]
     primary_metric: str
 
     def get_model_params(self) -> dict:
