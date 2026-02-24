@@ -24,6 +24,8 @@ class TrainingConfig(BaseModel):
     train_test_random_state: int
     train_valid_random_state: int
     preprocessing: list[PreprocessingStep]
+    model: Any
+    primary_metric: str
 
     def get_model_params(self) -> dict:
         """Extract only XGBoost model parameters."""
@@ -60,7 +62,7 @@ class TrainingConfig(BaseModel):
         OrdinalEncoder automatically receives unknown_value set to the number of
         unique categories seen in training data (required for handle_unknown).
         """
-        import sklearn.preprocessing as sk_pre  # noqa: PLC0415
+        import sklearn.preprocessing as sk_pre
 
         encoder_registry = {
             "StandardScaler": sk_pre.StandardScaler,

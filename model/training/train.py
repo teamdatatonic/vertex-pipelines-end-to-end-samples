@@ -24,7 +24,7 @@ from sklearn.pipeline import Pipeline
 from xgboost import XGBRegressor
 
 from .utils import save_metrics, save_monitoring_info, split_xy
-from .training_config import TrainingConfig
+from shared.training_config import TrainingConfig
 
 # used for monitoring during prediction time
 TRAINING_DATASET_INFO = "training_dataset.json"
@@ -82,7 +82,7 @@ def train(
     logging.info("Build sklearn preprocessing steps")
     preprocesser = ColumnTransformer(transformers=all_transformers)
     logging.info("Build sklearn pipeline with XGBoost model")
-    xgb_model = XGBRegressor(**config.get_model_params())
+    xgb_model = config.model(**config.get_model_params())
 
     pipeline = Pipeline(
         steps=[("feature_engineering", preprocesser), ("train_model", xgb_model)]

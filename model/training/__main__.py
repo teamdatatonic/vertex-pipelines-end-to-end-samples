@@ -18,7 +18,7 @@ import os
 import logging
 
 from .train import train
-from .training_config import TrainingConfig
+from shared.training_config import TrainingConfig
 
 logging.basicConfig(level=logging.DEBUG)
 

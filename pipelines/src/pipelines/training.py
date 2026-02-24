@@ -17,11 +17,11 @@ from os import environ as env
 from google_cloud_pipeline_components.v1.bigquery import BigqueryQueryJobOp
 from kfp import dsl
 from kfp.dsl import Dataset, Input, Metrics, Model, Output
-
+from xgboost import XGBRegressor
 from pipelines.utils.query import generate_query
 from components import extract_table, upload_model
 
-from pipelines.training_config import PreprocessingStep, TrainingConfig
+from shared.training_config import PreprocessingStep, TrainingConfig
 
 config = TrainingConfig(
     label="total_fare",
@@ -39,7 +39,13 @@ config = TrainingConfig(
     preprocessing=[
         PreprocessingStep(
             encoder="StandardScaler",
-            columns=["dayofweek", "hourofday", "trip_distance", "trip_miles", "trip_seconds"],
+            columns=[
+                "dayofweek",
+                "hourofday",
+                "trip_distance",
+                "trip_miles",
+                "trip_seconds",
+            ],
         ),
         PreprocessingStep(
             encoder="OneHotEncoder",
@@ -53,11 +59,13 @@ config = TrainingConfig(
             per_column=True,
         ),
     ],
+    model=XGBRegressor,
+    primary_metric="rootMeanSquaredError",
 )
 LABEL = config.label
 MODEL_PARAMS = config.get_model_params()
 SPLIT_PARAMS = config.get_split_params()
-PRIMARY_METRIC = "rootMeanSquaredError"
+PRIMARY_METRIC = config.primary_metric
 
 RESOURCE_SUFFIX = env.get("RESOURCE_SUFFIX", "default")
 TRAINING_IMAGE = f"{env['CONTAINER_IMAGE_REGISTRY']}/training:{RESOURCE_SUFFIX}"
