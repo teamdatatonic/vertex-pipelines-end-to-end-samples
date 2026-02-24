@@ -1,5 +1,5 @@
-from pydantic import BaseModel
-from typing import Any, Callable
+from pydantic import BaseModel, ImportString
+from typing import Any
 
 
 class PreprocessingStep(BaseModel):
@@ -24,7 +24,7 @@ class TrainingConfig(BaseModel):
     train_test_random_state: int
     train_valid_random_state: int
     preprocessing: list[PreprocessingStep]
-    model: dict[str, Callable[..., Any]]
+    model: ImportString[Any]
     primary_metric: str
 
     def get_model_params(self) -> dict:
