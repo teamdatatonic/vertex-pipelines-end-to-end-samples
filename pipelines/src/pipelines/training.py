@@ -17,7 +17,6 @@ from os import environ as env
 from google_cloud_pipeline_components.v1.bigquery import BigqueryQueryJobOp
 from kfp import dsl
 from kfp.dsl import Dataset, Input, Metrics, Model, Output
-from xgboost import XGBRegressor
 from pipelines.utils.query import generate_query
 from components import extract_table, upload_model
 
@@ -59,7 +58,7 @@ config = TrainingConfig(
             per_column=True,
         ),
     ],
-    model=XGBRegressor,
+    model="xgboost:XGBRegressor",
     primary_metric="rootMeanSquaredError",
 )
 LABEL = config.label
