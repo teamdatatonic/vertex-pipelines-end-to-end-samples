@@ -58,7 +58,7 @@ config = TrainingConfig(
             per_column=True,
         ),
     ],
-    model="xgboost:XGBRegressor",
+    model="XGBRegressor",
     primary_metric="rootMeanSquaredError",
 )
 LABEL = config.label

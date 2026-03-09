@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ImportString
+from pydantic import BaseModel, field_validator
 from typing import Any
 
 
@@ -7,6 +7,11 @@ class PreprocessingStep(BaseModel):
     columns: list[str]
     kwargs: dict[str, Any] = {}
     per_column: bool = False
+
+
+_MODEL_REGISTRY: dict[str, str] = {
+    "XGBRegressor": "xgboost.XGBRegressor",
+}
 
 
 class TrainingConfig(BaseModel):
@@ -24,8 +29,28 @@ class TrainingConfig(BaseModel):
     train_test_random_state: int
     train_valid_random_state: int
     preprocessing: list[PreprocessingStep]
-    model: ImportString[Any]
+    model: str
     primary_metric: str
+
+    @field_validator("model")
+    @classmethod
+    def model_must_be_registered(cls, v: str) -> str:
+        if v not in _MODEL_REGISTRY:
+            raise ValueError(
+                f"Unknown model '{v}'. Must be one of: {list(_MODEL_REGISTRY)}"
+            )
+        return v
+
+    def get_model_class(self) -> type:
+        """Resolve the model name to its class at runtime (lazy import).
+
+        xgboost is only imported here so the config package itself does not
+        need xgboost as a dependency.
+        """
+        import importlib
+
+        module_path, class_name = _MODEL_REGISTRY[self.model].rsplit(".", 1)
+        return getattr(importlib.import_module(module_path), class_name)
 
     def get_model_params(self) -> dict:
         """Extract only XGBoost model parameters."""
@@ -62,7 +87,7 @@ class TrainingConfig(BaseModel):
         OrdinalEncoder automatically receives unknown_value set to the number of
         unique categories seen in training data (required for handle_unknown).
         """
-        import sklearn.preprocessing as sk_pre
+        import sklearn.preprocessing as sk_pre  # noqa: PLC0415
 
         encoder_registry = {
             "StandardScaler": sk_pre.StandardScaler,
