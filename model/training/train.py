@@ -81,11 +81,11 @@ def train(
 
     logging.info("Build sklearn preprocessing steps")
     preprocesser = ColumnTransformer(transformers=all_transformers)
-    logging.info("Build sklearn pipeline with XGBoost model")
-    xgb_model = config.get_model_class()(**config.get_model_params())
+    logging.info("Build sklearn pipeline")
+    model = config.get_model_class()(**config.get_model_params())
 
     pipeline = Pipeline(
-        steps=[("feature_engineering", preprocesser), ("train_model", xgb_model)]
+        steps=[("feature_engineering", preprocesser), ("train_model", model)]
     )
 
     logging.info("Transform validation data")
@@ -93,9 +93,10 @@ def train(
     X_valid_transformed = valid_preprocesser.transform(X_valid)
 
     logging.info("Fit model")
-    pipeline.fit(
-        X_train, y_train, train_model__eval_set=[(X_valid_transformed, y_valid)]
-    )
+    fit_kwargs = {}
+    if config.use_eval_set:
+        fit_kwargs["train_model__eval_set"] = [(X_valid_transformed, y_valid)]
+    pipeline.fit(X_train, y_train, **fit_kwargs)
 
     logging.info("Predict test data")
     y_pred = pipeline.predict(X_test)

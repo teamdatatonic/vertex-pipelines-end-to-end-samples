@@ -30,6 +30,7 @@ class TrainingConfig(BaseModel):
     train_valid_random_state: int
     preprocessing: list[PreprocessingStep]
     model: str
+    use_eval_set: bool = False
     primary_metric: str
 
     def get_model_class(self) -> type:
@@ -75,8 +76,6 @@ class TrainingConfig(BaseModel):
 
     def get_transformers(self, X_train) -> list[tuple]:
         """Build ColumnTransformer tuples from the preprocessing config.
-
-
 
         For per_column steps, one transformer tuple is created per column.
         OrdinalEncoder automatically receives unknown_value set to the number of

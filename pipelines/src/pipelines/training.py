@@ -59,6 +59,7 @@ config = TrainingConfig(
         ),
     ],
     model="XGBRegressor",
+    use_eval_set=True,
     primary_metric="rootMeanSquaredError",
 )
 LABEL = config.label
