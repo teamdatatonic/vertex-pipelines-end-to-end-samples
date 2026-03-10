@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 from typing import Any
 
 
@@ -32,28 +32,24 @@ class TrainingConfig(BaseModel):
     model: str
     primary_metric: str
 
-    @field_validator("model")
-    @classmethod
-    def model_must_be_registered(cls, v: str) -> str:
-        if v not in _MODEL_REGISTRY:
-            raise ValueError(
-                f"Unknown model '{v}'. Must be one of: {list(_MODEL_REGISTRY)}"
-            )
-        return v
-
     def get_model_class(self) -> type:
-        """Resolve the model name to its class at runtime (lazy import).
+        """Return the model class for the configured model name.
 
-        xgboost is only imported here so the config package itself does not
-        need xgboost as a dependency.
+        The import is deferred to runtime so this package does not need the
+        modelling library as a dependency. Add new entries to _MODEL_REGISTRY
+        to support additional model types.
         """
         import importlib
 
+        if self.model not in _MODEL_REGISTRY:
+            raise ValueError(
+                f"Unknown model '{self.model}'. Must be one of: {list(_MODEL_REGISTRY)}"
+            )
         module_path, class_name = _MODEL_REGISTRY[self.model].rsplit(".", 1)
         return getattr(importlib.import_module(module_path), class_name)
 
     def get_model_params(self) -> dict:
-        """Extract only XGBoost model parameters."""
+        """Return the parameters used to instantiate the model."""
         return {
             "n_estimators": self.n_estimators,
             "early_stopping_rounds": self.early_stopping_rounds,
@@ -65,7 +61,7 @@ class TrainingConfig(BaseModel):
         }
 
     def get_split_params(self) -> dict:
-        """Extract train/test split parameters."""
+        """Return train/validation/test split parameters."""
         return {
             "train_test_split": {
                 "test_size": self.train_test_split_size,
@@ -78,10 +74,9 @@ class TrainingConfig(BaseModel):
         }
 
     def get_transformers(self, X_train) -> list[tuple]:
-        """Build ColumnTransformer tuples driven entirely by the preprocessing config.
+        """Build ColumnTransformer tuples from the preprocessing config.
 
-        sklearn is imported lazily here so this package has no sklearn dependency.
-        It is only called inside the model training container where sklearn is installed.
+
 
         For per_column steps, one transformer tuple is created per column.
         OrdinalEncoder automatically receives unknown_value set to the number of
