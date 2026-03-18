@@ -18,20 +18,25 @@ ENV PIP_NO_CACHE_DIR=off \
     PIP_DEFAULT_TIMEOUT=100 \
     POETRY_VIRTUALENVS_CREATE=false
 
-ARG POETRY_VERSION=1.5.1
+ARG POETRY_VERSION=2.1.3
 RUN pip install poetry==${POETRY_VERSION}
-COPY pyproject.toml poetry.lock .
+
+# Build context is the repo root so both model/ and config/ are available.
+# WORKDIR /model ensures the ../config path dependency resolves to /config.
+WORKDIR /model
+COPY model/pyproject.toml model/poetry.lock ./
+COPY config /config
 
 FROM builder AS training
 
-RUN poetry install --no-cache --no-interaction --without prediction
-COPY training training
+RUN poetry install --no-cache --no-interaction --without prediction --no-root
+COPY model/training training
 
 CMD python -m training
 
 FROM builder AS prediction
 
-RUN poetry install --no-cache --no-interaction --with prediction
-COPY prediction prediction
+RUN poetry install --no-cache --no-interaction --with prediction --no-root
+COPY model/prediction prediction
 
 CMD exec uvicorn prediction.main:app --host "0.0.0.0" --port "$AIP_HTTP_PORT"

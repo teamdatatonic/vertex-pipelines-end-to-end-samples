@@ -114,6 +114,15 @@ gcloud auth application-default login
 
 This repository contains example ML training and prediction pipelines which are explained in [this guide](docs/Pipelines.md).
 
+**Customise the training configuration:** All training configuration lives in two files — you should not need to change anything else to swap model type, hyperparameters, preprocessing, or evaluation metric:
+
+| File | What to change |
+|------|---------------|
+| [`config/shared/training_config.py`](config/shared/training_config.py) | Add a new model to `_MODEL_REGISTRY` (maps a short name to its fully-qualified import path). Add or remove fields from `TrainingConfig` and `get_model_params()` to match the parameters your model accepts. Add new encoders to the `encoder_registry` inside `get_transformers()` to support additional preprocessing steps. |
+| [`pipelines/src/pipelines/training.py`](pipelines/src/pipelines/training.py) | Set the values for all `TrainingConfig` fields: which `model` to use (must match a key in `_MODEL_REGISTRY`), hyperparameter values, preprocessing steps, `use_eval_set`, and `primary_metric`. |
+
+> **Note:** `use_eval_set` should only be set to `True` for models that accept an `eval_set` argument in their `fit()` method (e.g. XGBoost). Leave it as `False` (the default) for standard scikit-learn estimators.
+
 **Build containers:** The [model/](/model/) directory contains the code for custom training and prediction container images, including the model training script at [model/training/train.py](model/training/train.py).
 You can modify this to suit your own use case.
 Build the training and prediction container images and push them to Artifact Registry with:

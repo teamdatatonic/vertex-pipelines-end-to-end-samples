@@ -18,6 +18,7 @@ import os
 import logging
 
 from .train import train
+from shared.training_config import TrainingConfig
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -29,7 +30,18 @@ parser.add_argument("--output_valid_path", type=str, required=True)
 parser.add_argument("--output_test_path", type=str, required=True)
 parser.add_argument("--output_model", default=os.getenv("AIP_MODEL_DIR"), type=str)
 parser.add_argument("--output_metrics", type=str, required=True)
-parser.add_argument("--hparams", default={}, type=json.loads)
+parser.add_argument("--config", type=str, required=True)
 args = vars(parser.parse_args())
+config_dict = json.loads(args["config"])
+config = TrainingConfig(**config_dict)
 
-train(**args)
+train(
+    input_path=args["input_path"],
+    input_test_path=args["input_test_path"],
+    output_train_path=args["output_train_path"],
+    output_valid_path=args["output_valid_path"],
+    output_test_path=args["output_test_path"],
+    output_model=args["output_model"],
+    output_metrics=args["output_metrics"],
+    config=config,
+)
