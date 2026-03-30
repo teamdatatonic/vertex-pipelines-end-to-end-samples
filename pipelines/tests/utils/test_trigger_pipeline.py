@@ -33,9 +33,11 @@ from pipelines.utils.trigger_pipeline import trigger_pipeline
         (None, None),  # ENABLE_PIPELINE_CACHING env var not set
     ],
 )
+@mock.patch("pipelines.utils.trigger_pipeline.load_variables", return_value={})
 @mock.patch("google.cloud.aiplatform.PipelineJob")
 def test_trigger_pipeline(
-    mock_pipelinejob, test_enable_caching_input, enable_caching_expected
+    mock_pipelinejob, mock_load_variables, test_enable_caching_input,
+    enable_caching_expected,
 ):
 
     template_path = "path/to/template.yaml"
@@ -83,8 +85,11 @@ def test_trigger_pipeline(
         )
 
 
+@mock.patch("pipelines.utils.trigger_pipeline.load_variables", return_value={})
 @mock.patch("google.cloud.aiplatform.PipelineJob")
-def test_trigger_pipeline_invalid_caching_env_var(mock_pipelinejob):
+def test_trigger_pipeline_invalid_caching_env_var(
+    mock_pipelinejob, mock_load_variables,
+):
 
     template_path = "path/to/template.yaml"
     enable_caching = "invalid_value"
