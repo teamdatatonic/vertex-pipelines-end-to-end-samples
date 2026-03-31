@@ -148,18 +148,19 @@ def trigger_pipeline(
     env_vars = load_variables()
     scheduler_config = env_vars.get("scheduler", {})
 
-    _handle_schedule(
-        display_name,
-        scheduler_config,
-        pl,
-        project_id,
-        location,
-        service_account,
-        network,
-        pipeline_root,
-        template_path,
-        encryption_spec_key_name,
-    )
+    if display_name in ("training", "prediction"):
+        _handle_schedule(
+            display_name,
+            scheduler_config,
+            pl,
+            project_id,
+            location,
+            service_account,
+            network,
+            pipeline_root,
+            template_path,
+            encryption_spec_key_name,
+        )
 
     # Execute pipeline in Vertex
     pl.submit(
