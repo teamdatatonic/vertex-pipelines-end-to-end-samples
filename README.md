@@ -120,7 +120,7 @@ vertex_project_staging: "my-gcp-project-staging"
 vertex_project_prod: "my-gcp-project-prod"
 ```
 
-These values are used to detect which environment the pipeline is running in. When a pipeline is triggered, the `VERTEX_PROJECT_ID` environment variable (set in `env.sh`) is matched against these entries to load the correct environment-specific configuration.
+These values are used to detect which environment the pipeline is running in. When a pipeline is triggered, the `VERTEX_PROJECT_ID` environment variable (set in `env.sh`) is matched against these entries to load the correct environment-specific configuration. If `VERTEX_PROJECT_ID` does not match any of the configured project IDs, scheduling is skipped and the pipeline is submitted without creating or modifying any schedules.
 
 ### Pipeline Scheduling
 
