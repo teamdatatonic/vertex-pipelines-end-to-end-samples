@@ -23,20 +23,23 @@ import yaml
 _ENVIRONMENTS = ("dev", "staging", "prod")
 
 
-def detect_environment(config: dict) -> str:
-    """Match VERTEX_PROJECT_ID against vertex_project_* values in config."""
+def detect_environment(config: dict) -> str | None:
+    """Match VERTEX_PROJECT_ID against vertex_project_* values in config.
+
+    Returns None if no matching entry is found.
+    """
     project_id = os.environ.get("VERTEX_PROJECT_ID", "")
     for env in _ENVIRONMENTS:
         if config.get(f"vertex_project_{env}") == project_id:
             return env
-    raise ValueError(
-        f"Could not detect environment from VERTEX_PROJECT_ID='{project_id}'. "
-        f"No matching vertex_project_* entry found in variables.yml."
-    )
+    return None
 
 
-def load_variables() -> dict:
-    """Load variables.yml and return the block for the current environment."""
+def load_variables() -> dict | None:
+    """Load variables.yml and return the block for the current environment.
+
+    Returns None if VERTEX_PROJECT_ID does not match any configured project.
+    """
     config_path = (
         pathlib.Path(__file__).parent.parent.parent.parent
         / "variables"
@@ -46,4 +49,6 @@ def load_variables() -> dict:
         config = yaml.safe_load(f)
 
     environment = detect_environment(config)
+    if environment is None:
+        return None
     return config.get(environment, {})

@@ -146,9 +146,9 @@ def trigger_pipeline(
     )
 
     env_vars = load_variables()
-    scheduler_config = env_vars.get("scheduler", {})
+    scheduler_config = env_vars.get("scheduler", {}) if env_vars else {}
 
-    if display_name in ("training", "prediction"):
+    if scheduler_config and display_name in ("training", "prediction"):
         _handle_schedule(
             display_name,
             scheduler_config,
