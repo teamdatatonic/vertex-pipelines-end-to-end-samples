@@ -4,7 +4,7 @@ vertex_project_prod: "dt-theo-sandbox-prod"
 
 dev:
   scheduler:
-    enable_training_scheduler: true
+    enable_training_scheduler: false
     training_cron: "0 0 * * 4"  # https://crontab.guru/
     training_max_concurrent_run_count: 1
     training_max_run_count: 0  # Put 0 for infinite
