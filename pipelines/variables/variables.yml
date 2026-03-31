@@ -1,6 +1,6 @@
-vertex_project_dev: "dt-theo-sandbox-dev"
-vertex_project_staging: "dt-theo-sandbox-staging"
-vertex_project_prod: "dt-theo-sandbox-prod"
+vertex_project_dev: "my-gcp-project-dev"
+vertex_project_staging: "my-gcp-project-staging"
+vertex_project_prod: "my-gcp-project-prod"
 
 dev:
   scheduler:

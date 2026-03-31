@@ -110,6 +110,31 @@ gcloud auth login
 gcloud auth application-default login
 ```
 
+## Configure Pipeline Variables
+
+Before running pipelines, update [`pipelines/variables/variables.yml`](pipelines/variables/variables.yml) with your Google Cloud project IDs:
+
+```yaml
+vertex_project_dev: "my-gcp-project-dev"
+vertex_project_staging: "my-gcp-project-staging"
+vertex_project_prod: "my-gcp-project-prod"
+```
+
+These values are used to detect which environment the pipeline is running in. When a pipeline is triggered, the `VERTEX_PROJECT_ID` environment variable (set in `env.sh`) is matched against these entries to load the correct environment-specific configuration.
+
+### Pipeline Scheduling
+
+Each environment (`dev`, `staging`, `prod`) has its own scheduler configuration in `variables.yml`. When a training or prediction pipeline is triggered, the scheduler config for the current environment is loaded and used to create or remove a Vertex AI pipeline schedule via the [`PipelineJobSchedule`](https://cloud.google.com/vertex-ai/docs/pipelines/schedule-pipeline-run) API.
+
+| Setting | Description |
+|---------|-------------|
+| `enable_training_scheduler` / `enable_prediction_scheduler` | Set to `true` to create a schedule, `false` to remove any existing one |
+| `training_cron` / `prediction_cron` | Cron expression for the schedule (see [crontab.guru](https://crontab.guru/)) |
+| `training_max_concurrent_run_count` / `prediction_max_concurrent_run_count` | Max number of pipeline runs that can execute concurrently |
+| `training_max_run_count` / `prediction_max_run_count` | Total number of runs before the schedule is paused (`0` for infinite) |
+
+When scheduling is enabled, any previous schedule for that pipeline type is automatically deleted before creating the new one, ensuring only one active schedule exists at a time.
+
 ## Run
 
 This repository contains example ML training and prediction pipelines which are explained in [this guide](docs/Pipelines.md).
