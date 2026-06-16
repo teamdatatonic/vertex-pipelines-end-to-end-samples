@@ -24,6 +24,10 @@ variable "region" {
   type        = string
 }
 
+variable "dataset_id" {
+  description = "The BigQuery dataset ID."
+  type        = string
+}
 variable "cloud_schedulers_config" {
   description = "Map of configurations for cloud scheduler jobs (each a different pipeline schedule)."
   type = map(object({
