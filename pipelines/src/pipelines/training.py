@@ -118,7 +118,7 @@ def pipeline(
     bq_source_uri: str = f"{env.get('VERTEX_PROJECT_ID')}.{env.get('BQ_DATASET_ID', 'ml_dataset')}.{env.get('BQ_TABLE_ID', 'taxi_trips')}",
     model_name: str = "xgb_regressor",
     dataset: str = env.get("BQ_DATASET_ID", "ml_dataset"),
-    timestamp: str = "2024-01-01 00:00:00",
+    timestamp: str = "2013-08-01 00:00:00",
     test_data_gcs_uri: str = "",
 ):
     """

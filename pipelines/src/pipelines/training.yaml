@@ -15,7 +15,7 @@
 #    model_name: str [Default: 'xgb_regressor']
 #    project: str [Default: 'dt-roberta-sandbox-dev']
 #    test_data_gcs_uri: str [Default: '']
-#    timestamp: str [Default: '2024-01-01 00:00:00']
+#    timestamp: str [Default: '2013-08-01 00:00:00']
 components:
   comp-bigquery-query-job:
     executorLabel: exec-bigquery-query-job
@@ -586,7 +586,7 @@ root:
         isOptional: true
         parameterType: STRING
       timestamp:
-        defaultValue: '2024-01-01 00:00:00'
+        defaultValue: '2013-08-01 00:00:00'
         description: "Optional. Empty or a specific timestamp in ISO 8601 format\n\
           (YYYY-MM-DDThh:mm:ss.sss\xB1hh:mm or YYYY-MM-DDThh:mm:ss).\nIf any time\
           \ part is missing, it will be regarded as zero."
