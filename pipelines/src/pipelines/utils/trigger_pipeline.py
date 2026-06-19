@@ -14,7 +14,89 @@
 
 import argparse
 import os
+
 from google.cloud import aiplatform
+
+from pipelines.utils.load_config import load_variables
+
+
+def delete_previous_schedules(
+    schedule_pipeline_name: str, project_id: str, location: str
+):
+    """
+    Deletes all previous schedules matching the given display name.
+    Ensures only one schedule exists per pipeline type.
+    """
+    all_schedules = aiplatform.PipelineJobSchedule.list(
+        project=project_id,
+        location=location,
+    )
+    for scheduled_job in all_schedules:
+        print(f"Checking schedule: {scheduled_job.display_name}")
+        if schedule_pipeline_name == scheduled_job.display_name:
+            print(f"Deleting schedule: {scheduled_job.display_name}")
+            scheduled_job.delete()
+
+
+def _handle_schedule(
+    display_name: str,
+    scheduler_config: dict,
+    pl: aiplatform.PipelineJob,
+    project_id: str,
+    location: str,
+    service_account: str,
+    network: str,
+    pipeline_root: str,
+    template_path: str,
+    encryption_spec_key_name: str,
+):
+    """Create or delete a schedule for the given pipeline type."""
+    if display_name == "training":
+        schedule_name = "training_pipeline"
+        enabled = scheduler_config.get("enable_training_scheduler") is True
+        cron = scheduler_config.get("training_cron")
+        max_concurrent = scheduler_config.get(
+            "training_max_concurrent_run_count", 1
+        )
+        max_runs = scheduler_config.get("training_max_run_count", 0)
+    else:
+        schedule_name = "prediction_pipeline"
+        enabled = scheduler_config.get("enable_prediction_scheduler") is True
+        cron = scheduler_config.get("prediction_cron")
+        max_concurrent = scheduler_config.get(
+            "prediction_max_concurrent_run_count", 1
+        )
+        max_runs = scheduler_config.get("prediction_max_run_count", 0)
+
+    if enabled and cron:
+        delete_previous_schedules(schedule_name, project_id, location)
+
+        scheduled_pl = aiplatform.PipelineJob(
+            project=project_id,
+            location=location,
+            display_name=display_name,
+            enable_caching=False,
+            template_path=template_path,
+            pipeline_root=pipeline_root,
+            encryption_spec_key_name=encryption_spec_key_name,
+        )
+
+        print(f"Creating {display_name} pipeline schedule (caching disabled)")
+        scheduled_pl.create_schedule(
+            display_name=schedule_name,
+            cron=cron,
+            max_concurrent_run_count=max_concurrent,
+            max_run_count=max_runs if max_runs != 0 else None,
+            service_account=service_account,
+            network=network,
+        )
+        print(f"Successfully created {display_name} pipeline schedule")
+    else:
+        print(
+            f"{display_name.capitalize()} scheduler disabled, "
+            "removing any existing schedules"
+        )
+        delete_previous_schedules(schedule_name, project_id, location)
 
 
 def trigger_pipeline(
@@ -62,6 +144,23 @@ def trigger_pipeline(
         pipeline_root=pipeline_root,
         encryption_spec_key_name=encryption_spec_key_name,
     )
+
+    env_vars = load_variables()
+    scheduler_config = env_vars.get("scheduler", {}) if env_vars else {}
+
+    if scheduler_config and display_name in ("training", "prediction"):
+        _handle_schedule(
+            display_name,
+            scheduler_config,
+            pl,
+            project_id,
+            location,
+            service_account,
+            network,
+            pipeline_root,
+            template_path,
+            encryption_spec_key_name,
+        )
 
     # Execute pipeline in Vertex
     pl.submit(

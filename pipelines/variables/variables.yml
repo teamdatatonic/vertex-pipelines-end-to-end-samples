@@ -1,0 +1,39 @@
+vertex_project_dev: "my-gcp-project-dev"
+vertex_project_staging: "my-gcp-project-staging"
+vertex_project_prod: "my-gcp-project-prod"
+
+dev:
+  scheduler:
+    enable_training_scheduler: false
+    training_cron: "0 0 * * 4"  # https://crontab.guru/
+    training_max_concurrent_run_count: 1
+    training_max_run_count: 0  # Put 0 for infinite
+
+    enable_prediction_scheduler: false
+    prediction_cron: ""  # https://crontab.guru/
+    prediction_max_concurrent_run_count: 1
+    prediction_max_run_count: 0  # Put 0 for infinite
+
+staging:
+  scheduler:
+    enable_training_scheduler: false
+    training_cron: "0 0 * * 4"  # https://crontab.guru/
+    training_max_concurrent_run_count: 1
+    training_max_run_count: 0  # Put 0 for infinite
+
+    enable_prediction_scheduler: false
+    prediction_cron: ""  # https://crontab.guru/
+    prediction_max_concurrent_run_count: 1
+    prediction_max_run_count: 0  # Put 0 for infinite
+
+prod:
+  scheduler:
+    enable_training_scheduler: false
+    training_cron: "0 0 * * 4"  # https://crontab.guru/
+    training_max_concurrent_run_count: 1
+    training_max_run_count: 0  # Put 0 for infinite
+
+    enable_prediction_scheduler: false
+    prediction_cron: ""  # https://crontab.guru/
+    prediction_max_concurrent_run_count: 1
+    prediction_max_run_count: 0  # Put 0 for infinite
