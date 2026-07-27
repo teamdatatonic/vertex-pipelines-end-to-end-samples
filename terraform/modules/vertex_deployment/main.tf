@@ -33,6 +33,14 @@ resource "google_service_account" "pipelines_sa" {
   depends_on   = [google_project_service.gcp_services]
 }
 
+# Allow time for the service account to be created and propagated before granting it IAM roles.
+# Newly created service accounts are not immediately visible to IAM, which
+# causes "Service account ... does not exist" errors on apply.
+resource "time_sleep" "wait_for_pipelines_sa" {
+  depends_on      = [google_service_account.pipelines_sa]
+  create_duration = "30s"
+}
+
 ## GCS buckets ##
 resource "google_storage_bucket" "pipeline_root_bucket" {
   name                        = "${var.project_id}-pl-root"
@@ -40,6 +48,7 @@ resource "google_storage_bucket" "pipeline_root_bucket" {
   project                     = var.project_id
   uniform_bucket_level_access = true
   public_access_prevention    = "enforced"
+  force_destroy               = true
   depends_on                  = [google_project_service.gcp_services]
 }
 
@@ -50,6 +59,7 @@ resource "google_storage_bucket" "staging_bucket" {
   project                     = var.project_id
   uniform_bucket_level_access = true
   public_access_prevention    = "enforced"
+  force_destroy               = true
   depends_on                  = [google_project_service.gcp_services]
 }
 

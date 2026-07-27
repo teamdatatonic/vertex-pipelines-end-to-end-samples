@@ -21,7 +21,7 @@ help: ## Display this help screen.
 
 env ?= dev
 AUTO_APPROVE_FLAG :=
-deploy: ## Deploy infrastructure to your project. Optionally set env=<dev|test|prod> (default=dev).
+deploy: ## Deploy infrastructure to your project. This runs Terraform plan and applyOptionally set env=<dev|test|prod> (default=dev).
 	@echo "################################################################################" && \
 	echo "# Deploy $$env environment" && \
 	echo "################################################################################" && \

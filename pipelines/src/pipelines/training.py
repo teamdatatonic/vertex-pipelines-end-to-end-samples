@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pathlib
+import yaml
 from os import environ as env
 
 from google_cloud_pipeline_components.v1.bigquery import BigqueryQueryJobOp
@@ -22,19 +23,51 @@ from components import extract_table, upload_model
 
 from shared.training_config import PreprocessingStep, TrainingConfig
 
+
+def _detect_environment() -> str:
+    project_id = env.get("VERTEX_PROJECT_ID", "")
+    for suffix in ("prod", "staging", "dev"):
+        if project_id.endswith(f"-{suffix}"):
+            return suffix
+    raise ValueError(
+        f"Could not detect environment from VERTEX_PROJECT_ID='{project_id}'. "
+        "Expected project ID to end with '-dev', '-staging', or '-prod'."
+    )
+
+
+def load_config() -> dict:
+    config_path = pathlib.Path(__file__).parent.parent.parent / "variables" / "variables.yml"
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+
+    environment = _detect_environment()
+    env_config = config.get(environment)
+    if env_config is None:
+        raise ValueError(f"No configuration found for environment '{environment}'")
+
+    global_keys = {k: v for k, v in config.items() if k not in ("dev", "staging", "prod")}
+    return {**global_keys, **env_config}
+
+
+training_config = load_config()
+_training_params = {
+    "label": "total_fare",
+    "n_estimators": 200,
+    "early_stopping_rounds": 10,
+    "objective": "reg:squarederror",
+    "booster": "gbtree",
+    "learning_rate": 0.3,
+    "min_split_loss": 0,
+    "max_depth": 6,
+    "train_test_split_size": 0.2,
+    "train_valid_split_size": 0.25,
+    "train_test_random_state": 1,
+    "train_valid_random_state": 1,
+    **training_config.get("training", {}),
+}
+
 config = TrainingConfig(
-    label="total_fare",
-    n_estimators=200,
-    early_stopping_rounds=10,
-    objective="reg:squarederror",
-    booster="gbtree",
-    learning_rate=0.3,
-    min_split_loss=0,
-    max_depth=6,
-    train_test_split_size=0.2,
-    train_valid_split_size=0.25,
-    train_test_random_state=1,
-    train_valid_random_state=1,
+    **_training_params,
     preprocessing=[
         PreprocessingStep(
             encoder="StandardScaler",
@@ -67,9 +100,13 @@ MODEL_PARAMS = config.get_model_params()
 SPLIT_PARAMS = config.get_split_params()
 PRIMARY_METRIC = config.primary_metric
 
-RESOURCE_SUFFIX = env.get("RESOURCE_SUFFIX", "default")
-TRAINING_IMAGE = f"{env['CONTAINER_IMAGE_REGISTRY']}/training:{RESOURCE_SUFFIX}"
-PREDICTION_IMAGE = f"{env['CONTAINER_IMAGE_REGISTRY']}/prediction:{RESOURCE_SUFFIX}"
+RESOURCE_SUFFIX = training_config.get("resource_suffix", env.get("RESOURCE_SUFFIX", "default"))
+CONTAINER_IMAGE_REGISTRY = training_config.get(
+    "container_image_registry",
+    env.get("CONTAINER_IMAGE_REGISTRY", ""),
+)
+TRAINING_IMAGE = f"{CONTAINER_IMAGE_REGISTRY}/training:{RESOURCE_SUFFIX}"
+PREDICTION_IMAGE = f"{CONTAINER_IMAGE_REGISTRY}/prediction:{RESOURCE_SUFFIX}"
 
 
 @dsl.container_component

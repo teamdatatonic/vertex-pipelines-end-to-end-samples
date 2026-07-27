@@ -24,3 +24,9 @@ variable "labels" {
   type        = map(string)
   default     = {}
 }
+
+variable "delete_contents_on_destroy" {
+  description = "If true, delete all tables in the dataset when the dataset is destroyed."
+  type        = bool
+  default     = true
+}

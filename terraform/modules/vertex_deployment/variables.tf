@@ -59,6 +59,7 @@ variable "pipelines_sa_project_roles" {
   type        = list(string)
   default = [
     "roles/aiplatform.user",
+    "roles/iam.serviceAccountUser",
     "roles/logging.logWriter",
     "roles/bigquery.dataEditor",
     "roles/bigquery.jobUser",

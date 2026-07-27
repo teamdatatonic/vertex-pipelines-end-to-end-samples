@@ -21,9 +21,10 @@ resource "google_storage_bucket_iam_member" "pipelines_sa_pipeline_root_bucket_i
     "roles/storage.objectAdmin",
     "roles/storage.legacyBucketReader",
   ])
-  bucket = google_storage_bucket.pipeline_root_bucket.name
-  member = google_service_account.pipelines_sa.member
-  role   = each.key
+  bucket     = google_storage_bucket.pipeline_root_bucket.name
+  member     = google_service_account.pipelines_sa.member
+  role       = each.key
+  depends_on = [time_sleep.wait_for_pipelines_sa]
 }
 
 # Give default compute SA access to the staging bucket
@@ -67,8 +68,9 @@ resource "google_artifact_registry_repository_iam_member" "vertex_sa_can_access_
 
 # Vertex Pipelines SA project roles
 resource "google_project_iam_member" "pipelines_sa_project_roles" {
-  for_each = toset(var.pipelines_sa_project_roles)
-  project  = var.project_id
-  role     = each.key
-  member   = google_service_account.pipelines_sa.member
+  for_each   = toset(var.pipelines_sa_project_roles)
+  project    = var.project_id
+  role       = each.key
+  member     = google_service_account.pipelines_sa.member
+  depends_on = [time_sleep.wait_for_pipelines_sa]
 }

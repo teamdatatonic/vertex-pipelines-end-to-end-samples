@@ -1,7 +1,6 @@
 from typing import NamedTuple
 
-from kfp.dsl import Artifact, Dataset, Input, component
-from google_cloud_pipeline_components.types.artifact_types import VertexModel
+from kfp.dsl import Artifact, Input, Model, component
 
 
 @component(
@@ -13,8 +12,7 @@ from google_cloud_pipeline_components.types.artifact_types import VertexModel
     ],
 )
 def deploy_model(
-    vertex_model: Input[VertexModel],
-    training_data: Input[Dataset],
+    vertex_model: Input[Model],
     project: str,
     location: str,
     endpoint_name: str,
@@ -31,6 +29,7 @@ def deploy_model(
     request_response_logging_sampling_rate: float = 0.3,
     monitored_feature_names: list = [],
     monitored_prediction_field_names: list = [],
+    training_data_uri: str = "",
 ) -> NamedTuple("Outputs", [("endpoint_id", str)]):
     """
     Deploy a model to a Vertex AI endpoint using a rolling strategy,
@@ -43,7 +42,7 @@ def deploy_model(
 
     Args:
         vertex_model: VertexModel artifact from the upload_model component.
-        training_data: Training dataset used as baseline for skew detection.
+        training_data_uri: GCS URI of the training dataset used as baseline for skew detection.
         project: GCP project ID.
         location: GCP region (e.g. europe-west2).
         endpoint_name: Display name for the endpoint.
@@ -169,7 +168,7 @@ def deploy_model(
     if enable_monitoring:
         logger.info("Setting up Model Monitoring v2 for endpoint: %s", endpoint_name)
 
-        gcs_uri = training_data.uri
+        gcs_uri = training_data_uri
 
         resource_name = vertex_model.metadata["resourceName"]
         if "@" in resource_name:

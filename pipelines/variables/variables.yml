@@ -1,8 +1,37 @@
-vertex_project_dev: "my-gcp-project-dev"
+vertex_project_dev: "dt-roberta-sandbox-dev"
 vertex_project_staging: "my-gcp-project-staging"
 vertex_project_prod: "my-gcp-project-prod"
+resource_suffix: "default"
 
 dev:
+  
+  prediction_type: "batch"  # "batch" for batch prediction, "endpoint" for deploy+smoke-test+undeploy
+  endpoint_name: "turbo-prediction-endpoint"
+  model_name: "xgb_regressor"
+  vertex_location: "europe-west2"
+  bq_location: "europe-west2"
+  bq_dataset_id: "ml_dataset"
+  bq_table_id: "taxi_trips"
+  vertex_network: ""
+  vertex_cmek_identifier: ""
+  vertex_sa_email: "vertex-pipelines@dt-roberta-sandbox-dev.iam.gserviceaccount.com"
+  vertex_pipeline_root: "gs://dt-roberta-sandbox-dev-pl-root"
+  container_image_registry: "europe-west2-docker.pkg.dev/dt-roberta-sandbox-dev/vertex-images"
+
+  training:
+    label: "total_fare"
+    n_estimators: 200
+    early_stopping_rounds: 10
+    objective: "reg:squarederror"
+    booster: "gbtree"
+    learning_rate: 0.3
+    min_split_loss: 0
+    max_depth: 6
+    train_test_split_size: 0.2
+    train_valid_split_size: 0.25
+    train_test_random_state: 1
+    train_valid_random_state: 1
+
   scheduler:
     enable_training_scheduler: false
     training_cron: "0 0 * * 4"  # https://crontab.guru/
@@ -13,8 +42,53 @@ dev:
     prediction_cron: ""  # https://crontab.guru/
     prediction_max_concurrent_run_count: 1
     prediction_max_run_count: 0  # Put 0 for infinite
+  alert_emails:
+    - "roberta.nwokonko@datatonic.com"
+  notification_channels: []
+  monitoring:
+    enable: false
+    monitor_interval_hours_cron_job: "0 0 * * *"
+    monitor_window_hours: 24
+    default_drift_threshold: 0.3
+    monitored_feature_names:
+      - mileage
+      - photos_damage_count
+    monitored_prediction_field_names:
+      - prediction_value
+    notification_emails:
+      - "roberta.nwokonko@datatonic.com"
 
 staging:
+
+  prediction_type: "batch"  # "batch" for batch prediction, "endpoint" for deploy+smoke-test+undeploy
+  endpoint_name: "turbo-prediction-endpoint"
+  vertex_location: "europe-west2"
+  bq_location: "europe-west2"
+  bq_dataset_id: "ml_dataset"
+  bq_table_id: "taxi_trips"
+  vertex_network: ""
+  vertex_cmek_identifier: ""
+  vertex_sa_email: "vertex-pipelines@my-gcp-project-staging.iam.gserviceaccount.com"
+  vertex_pipeline_root: "gs://my-gcp-project-staging-pl-root"
+  container_image_registry: "europe-west2-docker.pkg.dev/my-gcp-project-staging/vertex-images"
+
+  training:
+    label: "total_fare"
+    n_estimators: 200
+    early_stopping_rounds: 10
+    objective: "reg:squarederror"
+    booster: "gbtree"
+    learning_rate: 0.3
+    min_split_loss: 0
+    max_depth: 6
+    train_test_split_size: 0.2
+    train_valid_split_size: 0.25
+    train_test_random_state: 1
+    train_valid_random_state: 1
+    
+  alert_emails: []
+  notification_channels: []
+
   scheduler:
     enable_training_scheduler: false
     training_cron: "0 0 * * 4"  # https://crontab.guru/
@@ -25,8 +99,37 @@ staging:
     prediction_cron: ""  # https://crontab.guru/
     prediction_max_concurrent_run_count: 1
     prediction_max_run_count: 0  # Put 0 for infinite
+
+  alert_emails:
+    - "roberta.nwokonko@datatonic.com"
+  notification_channels: []
+
+  monitoring:
+    enable: false
+    monitor_interval_hours_cron_job: "0 0 * * *"
+    monitor_window_hours: 24
+    default_drift_threshold: 0.3
+    monitored_feature_names:
+      - mileage
+      - photos_damage_count
+    monitored_prediction_field_names:
+      - prediction_value
+    notification_emails:
+      - "roberta.nwokonko@datatonic.com"
 
 prod:
+
+  prediction_type: "endpoint"  # "batch" for batch prediction, "endpoint" for deploy+smoke-test+undeploy
+  endpoint_name: "turbo-prediction-endpoint"
+  vertex_location: "europe-west2"
+  bq_location: "europe-west2"
+  bq_dataset_id: "ml_dataset"
+  bq_table_id: "taxi_trips"
+  vertex_network: ""
+  vertex_cmek_identifier: ""
+  vertex_sa_email: "vertex-pipelines@my-gcp-project-prod.iam.gserviceaccount.com"
+  vertex_pipeline_root: "gs://my-gcp-project-prod-pl-root"
+  container_image_registry: "europe-west2-docker.pkg.dev/my-gcp-project-prod/vertex-images"
   scheduler:
     enable_training_scheduler: false
     training_cron: "0 0 * * 4"  # https://crontab.guru/
@@ -37,3 +140,20 @@ prod:
     prediction_cron: ""  # https://crontab.guru/
     prediction_max_concurrent_run_count: 1
     prediction_max_run_count: 0  # Put 0 for infinite
+
+  alert_emails:
+    - "roberta.nwokonko@datatonic.com"
+  notification_channels: []
+  
+  monitoring:
+    enable: false
+    monitor_interval_hours_cron_job: "0 0 * * *"
+    monitor_window_hours: 24
+    default_drift_threshold: 0.3
+    monitored_feature_names:
+      - mileage
+      - photos_damage_count
+    monitored_prediction_field_names:
+      - prediction_value
+    notification_emails:
+      - "roberta.nwokonko@datatonic.com"
