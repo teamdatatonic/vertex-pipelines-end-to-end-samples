@@ -36,14 +36,17 @@ def model_batch_predict(
     machine_type: str = "n1-standard-2",
     starting_replica_count: int = 1,
     max_replica_count: int = 1,
-    monitoring_training_dataset: dict = None,
-    monitoring_alert_email_addresses: List[str] = None,
-    notification_channels: List[str] = [],
-    monitoring_skew_config: dict = None,
     instance_config: dict = None,
+    enable_monitoring: bool = True,
+    monitoring_training_gcs_uri: str = "",
+    monitored_features: dict = {},
+    default_drift_threshold: float = 0.3,
+    notification_emails: List[str] = [],
+    enable_cloud_logging: bool = True,
 ):
     """
-    Trigger a batch prediction job and enable monitoring.
+    Trigger a batch prediction job and, once it succeeds, run Model Monitoring v2
+    (feature drift) against its output.
 
     Args:
         model (Input[Model]): Input model to use for calculating predictions.
@@ -59,18 +62,28 @@ def model_batch_predict(
         machine_type (str): Machine type.
         starting_replica_count (int): Starting replica count.
         max_replica_count (int): Max replicat count.
-        monitoring_skew_config (dict): Configuration of training-serving skew. See:
-            https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1beta1.types.ModelMonitoringObjectiveConfig.TrainingPredictionSkewDetectionConfig
-        monitoring_alert_email_addresses (List[str]):
-            Email addresses to send alerts to (optional).
-        notification_channels (List[str]):
-            Notification channels to send alerts to (optional).
-            Format: projects/<project>/notificationChannels/<notification_channel>
-        monitoring_training_dataset (dict): Metadata of training dataset. See:
-            https://cloud.google.com/python/docs/reference/aiplatform/latest/google.cloud.aiplatform_v1beta1.types.ModelMonitoringObjectiveConfig.TrainingDataset
         instance_config (dict): Configuration defining how to transform batch prediction
             input instances to the instances that the Model accepts. See:
             https://cloud.google.com/vertex-ai/docs/reference/rest/v1beta1/projects.locations.batchPredictionJobs#instanceconfig
+        enable_monitoring (bool): Whether to run Model Monitoring v2 (feature drift)
+            against the batch job's output once it succeeds. Requires
+            monitoring_training_gcs_uri and monitored_features to be set; otherwise
+            monitoring is skipped with a warning.
+        monitoring_training_gcs_uri (str): GCS URI (CSV) of the training data used as
+            the drift-detection baseline, e.g. the value produced by the
+            lookup_model component's training_dataset_gcs_uri output.
+        monitored_features (dict): Maps each feature name to its Model Monitoring v2
+            schema data type. Supported values: "float", "integer", "boolean",
+            "string", "categorical". E.g. {"trip_miles": "float", "company":
+            "categorical"}. See:
+            https://cloud.google.com/vertex-ai/docs/model-monitoring/model-monitoring-overview
+        default_drift_threshold (float): Alert threshold applied to every monitored
+            feature (categorical and numeric) that doesn't have a more specific
+            threshold configured.
+        notification_emails (List[str]): Email addresses to notify when a drift
+            alert fires (optional).
+        enable_cloud_logging (bool): Whether Model Monitoring alerts are also written
+            to Cloud Logging, independent of `notification_emails`.
     Returns:
         OutputPath: gcp_resources for Vertex AI UI integration.
     """
@@ -149,25 +162,6 @@ def model_batch_predict(
     if instance_config:
         message["instanceConfig"] = instance_config
 
-    if monitoring_training_dataset and monitoring_skew_config:
-        logging.info("Adding monitoring config to request")
-        if not monitoring_alert_email_addresses:
-            monitoring_alert_email_addresses = []
-
-        message["modelMonitoringConfig"] = {
-            "alertConfig": {
-                "emailAlertConfig": {"userEmails": monitoring_alert_email_addresses},
-                "notificationChannels": notification_channels,
-                "enableLogging": True,
-            },
-            "objectiveConfigs": [
-                {
-                    "trainingDataset": monitoring_training_dataset,
-                    "trainingPredictionSkewDetectionConfig": monitoring_skew_config,
-                }
-            ],
-        }
-
     request = ParseDict(message, BatchPredictionJob()._pb)
 
     logging.info(f"Submitting batch prediction job: {job_display_name}")
@@ -221,3 +215,91 @@ def model_batch_predict(
                 f"Waiting for {_POLLING_INTERVAL_IN_SECONDS} seconds for next poll."
             )
             time.sleep(_POLLING_INTERVAL_IN_SECONDS)
+
+        if not enable_monitoring:
+            logging.info("enable_monitoring is False, skipping Model Monitoring v2")
+        elif not monitoring_training_gcs_uri or not monitored_features:
+            logging.warning(
+                "enable_monitoring is True but monitoring_training_gcs_uri or "
+                "monitored_features was not provided; skipping Model Monitoring v2 "
+                "setup for this batch job."
+            )
+        else:
+            from vertexai.resources.preview import ml_monitoring
+            from vertexai.resources.preview.ml_monitoring.spec import (
+                notification as notif_spec,
+                objective,
+                schema as schema_spec,
+            )
+
+            resource_name = model.metadata["resourceName"]
+            if "@" in resource_name:
+                monitor_model_name, monitor_model_version_id = resource_name.rsplit(
+                    "@", 1
+                )
+            else:
+                monitor_model_name, monitor_model_version_id = resource_name, "1"
+
+            model_monitoring_schema = schema_spec.ModelMonitoringSchema(
+                feature_fields=[
+                    schema_spec.FieldSchema(name=name, data_type=data_type)
+                    for name, data_type in monitored_features.items()
+                ]
+            )
+            baseline_dataset = objective.MonitoringInput(
+                gcs_uri=monitoring_training_gcs_uri, data_format="csv"
+            )
+            target_dataset = objective.MonitoringInput(
+                batch_prediction_job=response.name
+            )
+            feature_drift_spec = objective.DataDriftSpec(
+                categorical_metric_type="l_infinity",
+                numeric_metric_type="jensen_shannon_divergence",
+                default_categorical_alert_threshold=default_drift_threshold,
+                default_numeric_alert_threshold=default_drift_threshold,
+                feature_alert_thresholds={
+                    name: default_drift_threshold for name in monitored_features
+                },
+            )
+            tabular_objective_spec = objective.TabularObjective(
+                feature_drift_spec=feature_drift_spec
+            )
+            notification_spec = None
+            if notification_emails or enable_cloud_logging:
+                notification_spec = notif_spec.NotificationSpec(
+                    user_emails=notification_emails,
+                    enable_cloud_logging=enable_cloud_logging,
+                )
+
+            monitor_display_name = f"{job_display_name}-monitoring"
+            existing_monitors = ml_monitoring.ModelMonitor.list(
+                project=project,
+                location=location,
+                filter=f'display_name="{monitor_display_name}"',
+            )
+            if existing_monitors:
+                logging.info(
+                    f"Reusing existing ModelMonitor: "
+                    f"{existing_monitors[0].resource_name}"
+                )
+                monitor = existing_monitors[0]
+            else:
+                logging.info(f"Creating new ModelMonitor: {monitor_display_name}")
+                monitor = ml_monitoring.ModelMonitor.create(
+                    project=project,
+                    location=location,
+                    display_name=monitor_display_name,
+                    model_name=monitor_model_name,
+                    model_version_id=monitor_model_version_id,
+                    training_dataset=baseline_dataset,
+                    model_monitoring_schema=model_monitoring_schema,
+                )
+
+            monitoring_job = monitor.run(
+                display_name=f"{job_display_name}-monitoring-run",
+                baseline_dataset=baseline_dataset,
+                target_dataset=target_dataset,
+                tabular_objective_spec=tabular_objective_spec,
+                notification_spec=notification_spec,
+            )
+            logging.info(f"Model Monitoring v2 job submitted: {monitoring_job.name}")

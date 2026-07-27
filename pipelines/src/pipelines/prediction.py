@@ -22,12 +22,22 @@ from components import lookup_model, model_batch_predict
 
 
 RESOURCE_SUFFIX = env.get("RESOURCE_SUFFIX", "default")
-# set training-serving skew thresholds and emails to receive alerts:
-ALERT_EMAILS = []
-NOTIFICATION_CHANNELS = []
-SKEW_THRESHOLDS = {"defaultSkewThreshold": {"value": 0.001}}
-# or set different thresholds per feature:
-# SKEW_THRESHOLDS = {"skewThresholds": {"payment_type": {"value": 0.001}}, ... }
+
+# Model Monitoring v2 configuration for the batch prediction job. Set
+# NOTIFICATION_EMAILS to receive drift alerts. MONITORED_FEATURES maps each
+# feature (see preprocessing.sql) to its Model Monitoring v2 schema data type:
+# "float", "integer", "boolean", "string", or "categorical".
+NOTIFICATION_EMAILS = []
+DEFAULT_DRIFT_THRESHOLD = 0.3
+MONITORED_FEATURES = {
+    "dayofweek": "float",
+    "hourofday": "float",
+    "trip_distance": "float",
+    "trip_miles": "float",
+    "trip_seconds": "float",
+    "payment_type": "categorical",
+    "company": "categorical",
+}
 
 
 @dsl.pipeline(name="turbo-prediction-pipeline")
@@ -47,7 +57,7 @@ def pipeline(
     Prediction pipeline which:
      1. Looks up the default model version (champion).
      2. Runs a batch prediction job with BigQuery as input and output
-     3. Optionally monitors training-serving skew
+     3. Runs Model Monitoring v2 (feature drift) against the batch job's output
 
     Args:
         project (str): project id of the Google Cloud project
@@ -108,10 +118,10 @@ def pipeline(
             machine_type=machine_type,
             starting_replica_count=min_replicas,
             max_replica_count=max_replicas,
-            monitoring_training_dataset=lookup_op.outputs["training_dataset"],
-            monitoring_alert_email_addresses=ALERT_EMAILS,
-            notification_channels=NOTIFICATION_CHANNELS,
-            monitoring_skew_config=SKEW_THRESHOLDS,
+            monitoring_training_gcs_uri=lookup_op.outputs["training_dataset_gcs_uri"],
+            monitored_features=MONITORED_FEATURES,
+            default_drift_threshold=DEFAULT_DRIFT_THRESHOLD,
+            notification_emails=NOTIFICATION_EMAILS,
         )
         .after(prep_op)
         .set_display_name("Run prediction job")

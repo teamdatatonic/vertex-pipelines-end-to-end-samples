@@ -26,7 +26,9 @@ def lookup_model(
     project: str,
     model: Output[Model],
     fail_on_model_not_found: bool = False,
-) -> NamedTuple("Outputs", [("model_resource_name", str), ("training_dataset", dict)]):
+) -> NamedTuple(
+    "Outputs", [("model_resource_name", str), ("training_dataset_gcs_uri", str)]
+):
     """
     Fetch a model given a model name (display name) and export to GCS.
 
@@ -39,7 +41,11 @@ def lookup_model(
             model is not found
 
     Returns:
-        str: Resource name of the found model. Empty string if model not found.
+        model_resource_name (str): Resource name of the found model. Empty string
+            if model not found.
+        training_dataset_gcs_uri (str): GCS URI (CSV) of the training data used to
+            train this model, for use as a Model Monitoring v2 baseline dataset.
+            Empty string if the model's training dataset metadata is unavailable.
     """
 
     import json
@@ -58,7 +64,7 @@ def lookup_model(
     )
     logging.info(f"found {len(models)} model(s)")
 
-    training_dataset = {}
+    training_dataset_gcs_uri = ""
     model_resource_name = ""
     if len(models) == 0:
         logging.error(
@@ -82,9 +88,12 @@ def lookup_model(
         if os.path.exists(path):
             with open(path, "r") as fp:
                 training_dataset = json.load(fp)
+            uris = training_dataset.get("gcsSource", {}).get("uris", [])
+            if uris:
+                training_dataset_gcs_uri = uris[0]
         else:
             logging.warning("Training dataset metadata doesn't exist!")
     else:
         raise RuntimeError(f"Multiple models with name {model_name} were found.")
 
-    return model_resource_name, training_dataset
+    return model_resource_name, training_dataset_gcs_uri

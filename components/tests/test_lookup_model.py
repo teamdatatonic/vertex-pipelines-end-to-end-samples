@@ -88,3 +88,60 @@ def test_lookup_model_when_no_models_fail(mock_model, tmp_path):
             fail_on_model_not_found=True,
             model=Model(uri=str(tmp_path / "model")),
         )
+
+
+@mock.patch("google.cloud.aiplatform.Model")
+def test_lookup_model_extracts_training_dataset_gcs_uri(mock_model, tmp_path):
+    """
+    Checks that when the model's training_dataset.json metadata exists,
+    lookup_model extracts the GCS URI for use as a Model Monitoring v2
+    baseline dataset.
+    """
+    import json
+
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    (model_dir / "training_dataset.json").write_text(
+        json.dumps(
+            {
+                "gcsSource": {"uris": ["gs://my-bucket/train.csv"]},
+                "dataFormat": "csv",
+                "targetField": "total_fare",
+            }
+        )
+    )
+
+    mock_model.resource_name = "my-model-resource-name"
+    mock_model.uri = str(model_dir)
+    mock_model.list.return_value = [mock_model]
+
+    _, training_dataset_gcs_uri = lookup_model(
+        model_name="my-model",
+        location="europe-west4",
+        project="my-project-id",
+        fail_on_model_not_found=False,
+        model=Model(uri=str(model_dir)),
+    )
+
+    assert training_dataset_gcs_uri == "gs://my-bucket/train.csv"
+
+
+@mock.patch("google.cloud.aiplatform.Model")
+def test_lookup_model_when_training_dataset_metadata_missing(mock_model, tmp_path):
+    """
+    Checks that lookup_model returns an empty string (rather than raising) when
+    the model has no training_dataset.json metadata.
+    """
+    mock_model.resource_name = "my-model-resource-name"
+    mock_model.uri = str(tmp_path / "model")
+    mock_model.list.return_value = [mock_model]
+
+    _, training_dataset_gcs_uri = lookup_model(
+        model_name="my-model",
+        location="europe-west4",
+        project="my-project-id",
+        fail_on_model_not_found=False,
+        model=Model(uri=str(tmp_path / "model")),
+    )
+
+    assert training_dataset_gcs_uri == ""
