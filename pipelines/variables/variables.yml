@@ -60,7 +60,7 @@ staging:
   endpoint_name: "turbo-prediction-endpoint"
   vertex_location: "europe-west2"
   bq_location: "europe-west2"
-  bq_dataset_id: "ml_dataset"
+  bq_dataset_id: "chicago_taxi_trips"
   bq_table_id: "taxi_trips"
 
 
@@ -115,7 +115,7 @@ prod:
   endpoint_name: "turbo-prediction-endpoint"
   vertex_location: "europe-west2"
   bq_location: "europe-west2"
-  bq_dataset_id: "ml_dataset"
+  bq_dataset_id: "chicago_taxi_trips"
   bq_table_id: "taxi_trips"
 
   scheduler:

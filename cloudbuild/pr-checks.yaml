@@ -34,6 +34,7 @@ steps:
       - SKIP=terraform-fmt,git-dirty
       - CONTAINER_IMAGE_REGISTRY=dummy_value
       - RESOURCE_SUFFIX=default
+      - VERTEX_PROJECT_ID=dummy_value
 
 options:
   logging: CLOUD_LOGGING_ONLY
