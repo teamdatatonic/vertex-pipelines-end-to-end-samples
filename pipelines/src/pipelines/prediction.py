@@ -30,6 +30,9 @@ from components import (
 
 def _detect_environment() -> str:
     project_id = env.get("VERTEX_PROJECT_ID", "")
+    # Unset during compile/unit tests (e.g. pr-checks); default to dev config.
+    if not project_id:
+        return "dev"
     for suffix in ("prod", "staging", "dev"):
         if project_id.endswith(f"-{suffix}"):
             return suffix
