@@ -10,13 +10,9 @@ dev:
   model_name: "xgb_regressor"
   vertex_location: "europe-west2"
   bq_location: "europe-west2"
-  bq_dataset_id: "ml_dataset"
+  bq_dataset_id: "chicago_taxi_trips"
   bq_table_id: "taxi_trips"
-  vertex_network: ""
-  vertex_cmek_identifier: ""
-  vertex_sa_email: "vertex-pipelines@dt-roberta-sandbox-dev.iam.gserviceaccount.com"
-  vertex_pipeline_root: "gs://dt-roberta-sandbox-dev-pl-root"
-  container_image_registry: "europe-west2-docker.pkg.dev/dt-roberta-sandbox-dev/vertex-images"
+
 
   training:
     label: "total_fare"
@@ -66,11 +62,7 @@ staging:
   bq_location: "europe-west2"
   bq_dataset_id: "ml_dataset"
   bq_table_id: "taxi_trips"
-  vertex_network: ""
-  vertex_cmek_identifier: ""
-  vertex_sa_email: "vertex-pipelines@my-gcp-project-staging.iam.gserviceaccount.com"
-  vertex_pipeline_root: "gs://my-gcp-project-staging-pl-root"
-  container_image_registry: "europe-west2-docker.pkg.dev/my-gcp-project-staging/vertex-images"
+
 
   training:
     label: "total_fare"
@@ -125,11 +117,7 @@ prod:
   bq_location: "europe-west2"
   bq_dataset_id: "ml_dataset"
   bq_table_id: "taxi_trips"
-  vertex_network: ""
-  vertex_cmek_identifier: ""
-  vertex_sa_email: "vertex-pipelines@my-gcp-project-prod.iam.gserviceaccount.com"
-  vertex_pipeline_root: "gs://my-gcp-project-prod-pl-root"
-  container_image_registry: "europe-west2-docker.pkg.dev/my-gcp-project-prod/vertex-images"
+
   scheduler:
     enable_training_scheduler: false
     training_cron: "0 0 * * 4"  # https://crontab.guru/

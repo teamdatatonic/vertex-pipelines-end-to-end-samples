@@ -110,6 +110,8 @@ gcloud auth login
 gcloud auth application-default login
 ```
 
+> **Note:** The `deploy_model` component deploys models to a Vertex AI endpoint using a custom service account. That requires the [Service Account User](https://cloud.google.com/iam/docs/service-account-permissions#user-role) role (`roles/iam.serviceAccountUser`), which includes `iam.serviceAccounts.actAs`, so the pipeline SA can attach itself to the endpoint deployment. See [Attach service accounts to resources](https://cloud.google.com/iam/docs/attach-service-accounts). If you deployed infrastructure before this component was added, re-run `make deploy` while authenticated (commands above) so Terraform can grant the permission.
+
 ## Configure Pipeline Variables
 
 Before running pipelines, update [`pipelines/variables/variables.yml`](pipelines/variables/variables.yml) with your Google Cloud project IDs:

@@ -80,7 +80,8 @@ def pipeline(
     min_replicas: int = 3,
     max_replicas: int = 10,
     endpoint_name: str = ENDPOINT_NAME,
-    service_account: str = prediction_config.get("vertex_sa_email", ""),
+    service_account: str = env.get("VERTEX_SA_EMAIL"),
+    # service_account: str = prediction_config.get("vertex_sa_email", ""),
 ):
     """
     Prediction pipeline which:
