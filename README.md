@@ -58,6 +58,7 @@ _In future, this will be replaced with the Vertex Pipelines Scheduler (once ther
 
 - [Terraform](https://www.terraform.io/) for managing cloud infrastructure
 - [tfswitch](https://tfswitch.warrensbox.com/) to automatically choose and download an appropriate Terraform version (recommended)
+- **Python 3.12.8** (pinned in [`.python-version`](.python-version); also used for pipeline component base images and local Poetry envs)
 - [Pyenv](https://github.com/pyenv/pyenv#installation) for managing Python versions
 - [Poetry](https://python-poetry.org/) for managing Python dependencies
 - [Google Cloud SDK (gcloud)](https://cloud.google.com/sdk/docs/quickstart)
@@ -94,12 +95,14 @@ It describes the scheduling of pipelines and how to tear down infrastructure.
 **Install dependencies:**
 
 ```bash
-pyenv install -skip-existing                          # install Python
+pyenv install --skip-existing 3.12.8                  # install Python 3.12.8
 poetry config virtualenvs.prefer-active-python true   # configure Poetry
 make install                                          # install Python dependencies
 cd pipelines && poetry run pre-commit install         # install pre-commit hooks
 cp env.sh.example env.sh
 ```
+
+Use Python 3.12.x only (not 3.13/3.14). If Poetry recreates a broken `.venv`, point it at 3.12 explicitly, e.g. `cd components && poetry env use 3.12.8 && poetry install --with dev`.
 
 Update the environment variables for your dev environment in `env.sh`.
 
