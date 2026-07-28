@@ -1,4 +1,4 @@
-vertex_project_dev: "dt-roberta-sandbox-dev"
+vertex_project_dev: "my-gcp-project-dev"
 vertex_project_staging: "my-gcp-project-staging"
 vertex_project_prod: "my-gcp-project-prod"
 resource_suffix: "default"

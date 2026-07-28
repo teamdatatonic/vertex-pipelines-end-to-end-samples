@@ -100,10 +100,12 @@ MODEL_PARAMS = config.get_model_params()
 SPLIT_PARAMS = config.get_split_params()
 PRIMARY_METRIC = config.primary_metric
 
-RESOURCE_SUFFIX = training_config.get("resource_suffix", env.get("RESOURCE_SUFFIX", "default"))
-CONTAINER_IMAGE_REGISTRY = training_config.get(
-    "container_image_registry",
-    env.get("CONTAINER_IMAGE_REGISTRY", ""),
+# Prefer env so CI (e.g. e2e-test) can override YAML with COMMIT_SHA / registry.
+RESOURCE_SUFFIX = env.get("RESOURCE_SUFFIX") or training_config.get(
+    "resource_suffix", "default"
+)
+CONTAINER_IMAGE_REGISTRY = env.get("CONTAINER_IMAGE_REGISTRY") or training_config.get(
+    "container_image_registry", ""
 )
 TRAINING_IMAGE = f"{CONTAINER_IMAGE_REGISTRY}/training:{RESOURCE_SUFFIX}"
 PREDICTION_IMAGE = f"{CONTAINER_IMAGE_REGISTRY}/prediction:{RESOURCE_SUFFIX}"

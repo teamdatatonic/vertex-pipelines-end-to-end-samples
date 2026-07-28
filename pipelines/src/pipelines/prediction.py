@@ -55,7 +55,10 @@ def load_config() -> dict:
     return merged_config
 
 prediction_config = load_config()
-RESOURCE_SUFFIX = prediction_config.get("resource_suffix", env.get("RESOURCE_SUFFIX", "default"))
+# Prefer env so CI (e.g. e2e-test) can override YAML with COMMIT_SHA.
+RESOURCE_SUFFIX = env.get("RESOURCE_SUFFIX") or prediction_config.get(
+    "resource_suffix", "default"
+)
 
 ALERT_EMAILS = prediction_config.get("alert_emails", [])
 NOTIFICATION_CHANNELS = prediction_config.get("notification_channels", [])
