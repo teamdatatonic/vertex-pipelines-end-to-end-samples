@@ -89,7 +89,9 @@ def model_batch_predict(
     """
 
     import logging
+    import re
     import time
+    import uuid
 
     from functools import partial
     from google.protobuf.json_format import ParseDict, MessageToJson
@@ -104,6 +106,17 @@ def model_batch_predict(
     )
     from google_cloud_pipeline_components.container.utils import execution_context
     from google_cloud_pipeline_components.proto.gcp_resources_pb2 import GcpResources
+
+    def _slugify(name: str, max_length: int = 63) -> str:
+        """Make `name` a valid Model Monitoring resource ID.
+
+        Must match ``^[a-z]([a-z0-9-]{0,61}[a-z0-9])?$``.
+        """
+        slug = re.sub(r"[^a-z0-9-]", "-", name.lower()).strip("-")
+        slug = re.sub(r"-{2,}", "-", slug)
+        if not slug or not slug[0].isalpha():
+            slug = f"m-{slug}"
+        return slug[:max_length].rstrip("-")
 
     def send_cancel_request(client: JobServiceClient, batch_job_uri: str):
         logging.info("Sending BatchPredictionJob cancel request")
@@ -231,6 +244,14 @@ def model_batch_predict(
                 objective,
                 schema as schema_spec,
             )
+            from google.cloud.aiplatform_v1beta1.services.model_monitoring_service import (  # noqa: E501
+                ModelMonitoringServiceClient,
+            )
+            from google.cloud.aiplatform_v1beta1.types import (
+                model_monitoring_job as gca_model_monitoring_job,
+                model_monitoring_service as gca_model_monitoring_service,
+                model_monitoring_spec as gca_model_monitoring_spec,
+            )
 
             resource_name = model.metadata["resourceName"]
             if "@" in resource_name:
@@ -295,11 +316,57 @@ def model_batch_predict(
                     model_monitoring_schema=model_monitoring_schema,
                 )
 
-            monitoring_job = monitor.run(
-                display_name=f"{job_display_name}-monitoring-run",
-                baseline_dataset=baseline_dataset,
-                target_dataset=target_dataset,
-                tabular_objective_spec=tabular_objective_spec,
-                notification_spec=notification_spec,
+            # `ModelMonitor.run()` / `ModelMonitoringJob.create()` (used by the
+            # vertexai.resources.preview.ml_monitoring SDK) unconditionally
+            # call `model_monitoring_job._block_until_complete()` after
+            # submitting the job - this happens regardless of `sync`; `sync`
+            # only controls whether that blocking wait happens on the
+            # calling thread (sync=True) or on a background thread from
+            # google.cloud.aiplatform's shared ThreadPoolExecutor
+            # (sync=False). Either way, this component's container previously
+            # ended up waiting for the *entire* monitoring computation to
+            # finish (10-30+ minutes) before it could exit, because Python's
+            # interpreter shutdown always joins that pool's non-daemon
+            # threads (see `concurrent.futures.thread`, which registers via
+            # `threading._register_atexit` - this runs *before* normal
+            # `atexit.register()` callbacks, so registering our own atexit
+            # hook to force-exit earlier does not help either).
+            #
+            # Drift detection is an observability side effect of the batch
+            # job, not something the pipeline's critical path should block
+            # on. To get genuine fire-and-forget submission, bypass the
+            # preview SDK's ModelMonitoringJob.create()/run() entirely and
+            # call the underlying GAPIC RPC directly - like the rest of this
+            # component already does for the BatchPredictionJob itself. This
+            # is a plain, synchronous unary call: it returns as soon as the
+            # job resource is accepted, with no local polling loop at all.
+            monitoring_job_id = _slugify(
+                f"{job_display_name}-mon-{uuid.uuid4().hex[:8]}"
             )
-            logging.info(f"Model Monitoring v2 job submitted: {monitoring_job.name}")
+            monitoring_job_request = gca_model_monitoring_job.ModelMonitoringJob(
+                display_name=f"{job_display_name}-monitoring-run",
+                model_monitoring_spec=gca_model_monitoring_spec.ModelMonitoringSpec(
+                    objective_spec=gca_model_monitoring_spec.ModelMonitoringObjectiveSpec(  # noqa: E501
+                        tabular_objective=tabular_objective_spec._as_proto(),
+                        baseline_dataset=baseline_dataset._as_proto(),
+                        target_dataset=target_dataset._as_proto(),
+                    ),
+                    notification_spec=(
+                        notification_spec._as_proto() if notification_spec else None
+                    ),
+                ),
+            )
+            monitoring_client = ModelMonitoringServiceClient(
+                client_options={"api_endpoint": api_endpoint}
+            )
+            created_monitoring_job = monitoring_client.create_model_monitoring_job(
+                request=gca_model_monitoring_service.CreateModelMonitoringJobRequest(
+                    parent=monitor.resource_name,
+                    model_monitoring_job=monitoring_job_request,
+                    model_monitoring_job_id=monitoring_job_id,
+                )
+            )
+            logging.info(
+                "Model Monitoring v2 job submitted (fire-and-forget): "
+                f"{created_monitoring_job.name}"
+            )

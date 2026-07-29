@@ -127,6 +127,43 @@ def test_lookup_model_extracts_training_dataset_gcs_uri(mock_model, tmp_path):
 
 
 @mock.patch("google.cloud.aiplatform.Model")
+def test_lookup_model_normalizes_gcs_fuse_path(mock_model, tmp_path):
+    """
+    Older training runs persisted the local Cloud Storage FUSE mount path
+    (e.g. "/gcs/bucket/object") instead of a "gs://" URI in
+    training_dataset.json. lookup_model must normalize this to a "gs://" URI,
+    since Model Monitoring v2 rejects anything else.
+    """
+    import json
+
+    model_dir = tmp_path / "model"
+    model_dir.mkdir()
+    (model_dir / "training_dataset.json").write_text(
+        json.dumps(
+            {
+                "gcsSource": {"uris": ["/gcs/my-bucket/path/to/train_data"]},
+                "dataFormat": "csv",
+                "targetField": "total_fare",
+            }
+        )
+    )
+
+    mock_model.resource_name = "my-model-resource-name"
+    mock_model.uri = str(model_dir)
+    mock_model.list.return_value = [mock_model]
+
+    _, training_dataset_gcs_uri = lookup_model(
+        model_name="my-model",
+        location="europe-west4",
+        project="my-project-id",
+        fail_on_model_not_found=False,
+        model=Model(uri=str(model_dir)),
+    )
+
+    assert training_dataset_gcs_uri == "gs://my-bucket/path/to/train_data"
+
+
+@mock.patch("google.cloud.aiplatform.Model")
 def test_lookup_model_when_training_dataset_metadata_missing(mock_model, tmp_path):
     """
     Checks that lookup_model returns an empty string (rather than raising) when

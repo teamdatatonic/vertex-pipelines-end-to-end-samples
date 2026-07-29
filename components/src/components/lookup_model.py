@@ -91,6 +91,15 @@ def lookup_model(
             uris = training_dataset.get("gcsSource", {}).get("uris", [])
             if uris:
                 training_dataset_gcs_uri = uris[0]
+                # Older training runs stored the local Cloud Storage FUSE mount
+                # path (e.g. "/gcs/bucket/object") instead of a "gs://" URI.
+                # Model Monitoring v2 requires a proper "gs://" URI, so
+                # normalise it here rather than relying on every training run
+                # to have written the correct format.
+                if training_dataset_gcs_uri.startswith("/gcs/"):
+                    training_dataset_gcs_uri = (
+                        "gs://" + training_dataset_gcs_uri[len("/gcs/") :]
+                    )
         else:
             logging.warning("Training dataset metadata doesn't exist!")
     else:
