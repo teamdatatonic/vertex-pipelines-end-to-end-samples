@@ -175,4 +175,4 @@ For each of the above, create a Cloud Build trigger with the following settings:
 |-------------------------------|-------------------------------------|
 | `pr-checks.yaml`              |                                     |
 | `trigger-tests.yaml`          |                                     |
-| `e2e-test.yaml`               |  _TEST_ENABLE_PIPELINE_CACHING = `False`<br>_TEST_VERTEX_LOCATION = `<GCP REGION (same as buckets etc above)>`<br>_TEST_BQ_LOCATION = `europe-west2`<br>_TEST_VERTEX_PIPELINE_ROOT = `gs://<GCP PROJECT ID>-pl-root`<br>_TEST_VERTEX_PROJECT_ID = `<GCP PROJECT ID>`<br>_TEST_VERTEX_SA_EMAIL = `vertex-pipelines@<GCP PROJECT ID>.iam.gserviceaccount.com` |
+| `e2e-test.yaml`               |  _TEST_ENABLE_PIPELINE_CACHING = `False`<br>_TEST_VERTEX_LOCATION = `europe-west2`<br>_TEST_VERTEX_PIPELINE_ROOT = `gs://<GCP PROJECT ID>-pl-root`<br>_TEST_VERTEX_PROJECT_ID = `<GCP PROJECT ID>`<br>_TEST_VERTEX_SA_EMAIL = `vertex-pipelines@<GCP PROJECT ID>.iam.gserviceaccount.com` |

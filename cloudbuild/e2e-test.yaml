@@ -71,7 +71,8 @@ steps:
       - ENABLE_PIPELINE_CACHING=${_TEST_ENABLE_PIPELINE_CACHING}
       - VERTEX_LOCATION=${_TEST_VERTEX_LOCATION}
       - VERTEX_PROJECT_ID=${_TEST_VERTEX_PROJECT_ID}
-      - BQ_LOCATION=${_TEST_BQ_LOCATION}
+      # Keep BQ in the same region as Vertex; ignore trigger _TEST_BQ_LOCATION=US if set.
+      - BQ_LOCATION=${_TEST_VERTEX_LOCATION}
       - VERTEX_SA_EMAIL=${_TEST_VERTEX_SA_EMAIL}
       - VERTEX_CMEK_IDENTIFIER=${_TEST_VERTEX_CMEK_IDENTIFIER}
       - VERTEX_NETWORK=${_TEST_VERTEX_NETWORK}
@@ -84,10 +85,6 @@ steps:
 
 options:
   logging: CLOUD_LOGGING_ONLY
-
-substitutions:
-  # Override on the Cloud Build trigger if needed. Must match the BQ dataset region.
-  _TEST_BQ_LOCATION: europe-west2
 
 # Increase timeout to allow end-to-end (E2E) pipeline tests to run
 timeout: 18000s  # 5 hours
