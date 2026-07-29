@@ -39,7 +39,7 @@ dev:
     prediction_max_concurrent_run_count: 1
     prediction_max_run_count: 0  # Put 0 for infinite
   alert_emails:
-    - "roberta.nwokonko@datatonic.com"
+    - "example@example.com"
   notification_channels: []
   monitoring:
     enable: false
@@ -52,7 +52,7 @@ dev:
     monitored_prediction_field_names:
       - prediction_value
     notification_emails:
-      - "roberta.nwokonko@datatonic.com"
+      - "example@example.com"
 
 staging:
 
@@ -93,7 +93,7 @@ staging:
     prediction_max_run_count: 0  # Put 0 for infinite
 
   alert_emails:
-    - "roberta.nwokonko@datatonic.com"
+    - "example@example.com"
   notification_channels: []
 
   monitoring:
@@ -107,7 +107,7 @@ staging:
     monitored_prediction_field_names:
       - prediction_value
     notification_emails:
-      - "roberta.nwokonko@datatonic.com"
+      - "example@example.com"
 
 prod:
 
@@ -130,7 +130,7 @@ prod:
     prediction_max_run_count: 0  # Put 0 for infinite
 
   alert_emails:
-    - "roberta.nwokonko@datatonic.com"
+    - "example@example.com"
   notification_channels: []
   
   monitoring:
@@ -144,4 +144,4 @@ prod:
     monitored_prediction_field_names:
       - prediction_value
     notification_emails:
-      - "roberta.nwokonko@datatonic.com"
+      - "example@example.com"
