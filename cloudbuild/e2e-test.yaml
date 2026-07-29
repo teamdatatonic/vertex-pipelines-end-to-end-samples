@@ -85,5 +85,9 @@ steps:
 options:
   logging: CLOUD_LOGGING_ONLY
 
+substitutions:
+  # Override on the Cloud Build trigger if needed. Must match the BQ dataset region.
+  _TEST_BQ_LOCATION: europe-west2
+
 # Increase timeout to allow end-to-end (E2E) pipeline tests to run
 timeout: 18000s  # 5 hours
