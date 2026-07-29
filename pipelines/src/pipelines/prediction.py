@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pathlib
-import yaml
 from os import environ as env
 
 from google_cloud_pipeline_components.v1.bigquery import BigqueryQueryJobOp
 from kfp import dsl
 
+from pipelines.utils.load_config import load_variables
 from pipelines.utils.query import generate_query
 from components import (
     deploy_model,
@@ -28,36 +28,7 @@ from components import (
 )
 
 
-def _detect_environment() -> str:
-    project_id = env.get("VERTEX_PROJECT_ID", "")
-    # Unset during compile/unit tests (e.g. pr-checks); default to dev config.
-    if not project_id:
-        return "dev"
-    for suffix in ("prod", "staging", "dev"):
-        if project_id.endswith(f"-{suffix}"):
-            return suffix
-    raise ValueError(
-        f"Could not detect environment from VERTEX_PROJECT_ID='{project_id}'. "
-        "Expected project ID to end with '-dev', '-staging', or '-prod'."
-    )
-
-def load_config() -> dict:
-    config_path = pathlib.Path(__file__).parent.parent.parent / "variables" / "variables.yml"
-    with open(config_path) as f:
-        config = yaml.safe_load(f)
-
-    environment = _detect_environment()
-    env_config = config.get(environment)
-    if env_config is None:
-        raise ValueError(f"No configuration found for environment '{environment}'")
-
-    # Merge global keys into environment config
-    global_keys = {k: v for k, v in config.items() if k not in ("dev", "staging", "prod")}
-    merged_config = {**global_keys, **env_config}  # env_config overrides global keys if same name
-
-    return merged_config
-
-prediction_config = load_config()
+prediction_config = load_variables()
 # Prefer env so CI (e.g. e2e-test) can override YAML with COMMIT_SHA.
 RESOURCE_SUFFIX = env.get("RESOURCE_SUFFIX") or prediction_config.get(
     "resource_suffix", "default"
@@ -70,7 +41,6 @@ SKEW_THRESHOLDS = prediction_config.get("monitoring", {}).get("skew_thresholds",
 
 PREDICTION_TYPE = prediction_config.get("prediction_type", "batch")
 ENDPOINT_NAME = prediction_config.get("endpoint_name", "turbo-prediction-endpoint")
-MONITORING_CONFIG = prediction_config.get("monitoring", {})
 
 
 @dsl.pipeline(name="turbo-prediction-pipeline")
@@ -87,7 +57,6 @@ def pipeline(
     max_replicas: int = 10,
     endpoint_name: str = ENDPOINT_NAME,
     service_account: str = env.get("VERTEX_SA_EMAIL"),
-    # service_account: str = prediction_config.get("vertex_sa_email", ""),
 ):
     """
     Prediction pipeline which:
@@ -152,28 +121,9 @@ def pipeline(
                 location=location,
                 endpoint_name=endpoint_name,
                 service_account=service_account,
-                enable_monitoring=MONITORING_CONFIG.get("enable", False),
-                monitor_interval_hours_cron_job=MONITORING_CONFIG.get(
-                    "monitor_interval_hours_cron_job", "0 0 * * *"
-                ),
-                monitor_window_hours=MONITORING_CONFIG.get(
-                    "monitor_window_hours", 24
-                ),
-                default_drift_threshold=MONITORING_CONFIG.get(
-                    "default_drift_threshold", 0.3
-                ),
-                notification_emails=MONITORING_CONFIG.get(
-                    "notification_emails", []
-                ),
                 machine_type=machine_type,
                 min_replica_count=min_replicas,
                 max_replica_count=max_replicas,
-                monitored_feature_names=MONITORING_CONFIG.get(
-                    "monitored_feature_names", []
-                ),
-                monitored_prediction_field_names=MONITORING_CONFIG.get(
-                    "monitored_prediction_field_names", []
-                ),
             )
             .after(prep_op)
             .set_display_name("Deploy model to endpoint")

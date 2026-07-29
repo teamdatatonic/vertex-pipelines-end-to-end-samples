@@ -12,47 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pathlib
-import yaml
 from os import environ as env
 
 from google_cloud_pipeline_components.v1.bigquery import BigqueryQueryJobOp
 from kfp import dsl
 from kfp.dsl import Dataset, Input, Metrics, Model, Output
+from pipelines.utils.load_config import load_variables
 from pipelines.utils.query import generate_query
 from components import extract_table, upload_model
 
 from shared.training_config import PreprocessingStep, TrainingConfig
 
 
-def _detect_environment() -> str:
-    project_id = env.get("VERTEX_PROJECT_ID", "")
-    # Unset during compile/unit tests (e.g. pr-checks); default to dev config.
-    if not project_id:
-        return "dev"
-    for suffix in ("prod", "staging", "dev"):
-        if project_id.endswith(f"-{suffix}"):
-            return suffix
-    raise ValueError(
-        f"Could not detect environment from VERTEX_PROJECT_ID='{project_id}'. "
-        "Expected project ID to end with '-dev', '-staging', or '-prod'."
-    )
-
-
-def load_config() -> dict:
-    config_path = pathlib.Path(__file__).parent.parent.parent / "variables" / "variables.yml"
-    with open(config_path) as f:
-        config = yaml.safe_load(f)
-
-    environment = _detect_environment()
-    env_config = config.get(environment)
-    if env_config is None:
-        raise ValueError(f"No configuration found for environment '{environment}'")
-
-    global_keys = {k: v for k, v in config.items() if k not in ("dev", "staging", "prod")}
-    return {**global_keys, **env_config}
-
-
-training_config = load_config()
+training_config = load_variables()
 _training_params = {
     "label": "total_fare",
     "n_estimators": 200,

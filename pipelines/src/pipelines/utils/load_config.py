@@ -21,34 +21,51 @@ import yaml
 
 
 _ENVIRONMENTS = ("dev", "staging", "prod")
+_VARIABLES_PATH = (
+    pathlib.Path(__file__).parent.parent.parent.parent / "variables" / "variables.yml"
+)
 
 
-def detect_environment(config: dict) -> str | None:
-    """Match VERTEX_PROJECT_ID against vertex_project_* values in config.
+def detect_environment() -> str:
+    """Infer the environment from the VERTEX_PROJECT_ID suffix.
 
-    Returns None if no matching entry is found.
+    Matches a project id ending in ``-dev``, ``-staging`` or ``-prod``. When
+    VERTEX_PROJECT_ID is unset (e.g. during compile / unit tests such as
+    pr-checks) this defaults to ``dev``.
+
+    Raises:
+        ValueError: if VERTEX_PROJECT_ID is set but does not end with a known
+            environment suffix.
     """
     project_id = os.environ.get("VERTEX_PROJECT_ID", "")
-    for env in _ENVIRONMENTS:
-        if config.get(f"vertex_project_{env}") == project_id:
-            return env
-    return None
-
-
-def load_variables() -> dict | None:
-    """Load variables.yml and return the block for the current environment.
-
-    Returns None if VERTEX_PROJECT_ID does not match any configured project.
-    """
-    config_path = (
-        pathlib.Path(__file__).parent.parent.parent.parent
-        / "variables"
-        / "variables.yml"
+    if not project_id:
+        return "dev"
+    for suffix in ("prod", "staging", "dev"):
+        if project_id.endswith(f"-{suffix}"):
+            return suffix
+    raise ValueError(
+        f"Could not detect environment from VERTEX_PROJECT_ID='{project_id}'. "
+        "Expected project ID to end with '-dev', '-staging', or '-prod'."
     )
-    with open(config_path) as f:
+
+
+def load_variables() -> dict:
+    """Load variables.yml and return the config for the current environment.
+
+    Global (top-level) keys are merged with the detected environment block;
+    environment keys win on conflict.
+
+    Raises:
+        ValueError: if there is no configuration block for the detected
+            environment.
+    """
+    with open(_VARIABLES_PATH) as f:
         config = yaml.safe_load(f)
 
-    environment = detect_environment(config)
-    if environment is None:
-        return None
-    return config.get(environment, {})
+    environment = detect_environment()
+    env_config = config.get(environment)
+    if env_config is None:
+        raise ValueError(f"No configuration found for environment '{environment}'")
+
+    global_keys = {k: v for k, v in config.items() if k not in _ENVIRONMENTS}
+    return {**global_keys, **env_config}

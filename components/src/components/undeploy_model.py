@@ -26,18 +26,14 @@ def undeploy_model(
     location: str,
     endpoint_id: str,
     deployed_model_id: str = "",
-    delete_monitoring_job: bool = True,
     delete_endpoint_if_empty: bool = False,
 ) -> None:
     """
     Undeploy model(s) from a Vertex AI endpoint and optionally clean up
-    the monitoring job and the endpoint.
+    the endpoint.
 
     Can undeploy all models on the endpoint (when deployed_model_id is empty)
-    or a single deployed model by ID. If deploy_model was used with monitoring
-    enabled, the associated ModelDeploymentMonitoringJob is named
-    \"{endpoint_display_name}-monitoring\" and can be deleted when
-    delete_monitoring_job is True.
+    or a single deployed model by ID.
 
     Args:
         project: GCP project ID.
@@ -45,8 +41,6 @@ def undeploy_model(
         endpoint_id: Vertex AI endpoint ID (e.g. from deploy_model output).
         deployed_model_id: If set, undeploy only this deployed model ID;
             otherwise undeploy all models on the endpoint.
-        delete_monitoring_job: If True, find and delete the monitoring job
-            whose display name is \"{endpoint_display_name}-monitoring\".
         delete_endpoint_if_empty: If True, after undeploying, delete the
             endpoint when it has no deployed models left.
     """
@@ -98,31 +92,6 @@ def undeploy_model(
                 traffic_split[remaining[0].id] += total - sum(traffic_split.values())
                 endpoint.undeploy(did, traffic_split=traffic_split)
             undeployed.add(did)
-
-    if delete_monitoring_job:
-        display_name = getattr(endpoint, "display_name", None) or ""
-        if display_name:
-            job_name = f"{display_name}-monitoring"
-            logger.info("Looking for monitoring job: %s", job_name)
-            jobs = aip.ModelDeploymentMonitoringJob.list(
-                filter=f'display_name="{job_name}"',
-                project=project,
-                location=location,
-            )
-            for job in jobs:
-                if job.state.name not in (
-                    "JOB_STATE_SUCCEEDED",
-                    "JOB_STATE_FAILED",
-                    "JOB_STATE_CANCELLED",
-                ):
-                    logger.info("Pausing monitoring job: %s", job.resource_name)
-                    job.pause()
-                logger.info("Deleting monitoring job: %s", job.resource_name)
-                job.delete()
-        else:
-            logger.warning(
-                "Endpoint has no display_name; cannot look up monitoring job"
-            )
 
     if delete_endpoint_if_empty:
         endpoint = aip.Endpoint(endpoint_resource_name)

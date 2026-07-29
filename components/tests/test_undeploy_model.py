@@ -17,10 +17,9 @@ def _make_deployed_model(model_id: str):
     return dm
 
 
-@mock.patch("google.cloud.aiplatform.ModelDeploymentMonitoringJob")
 @mock.patch("google.cloud.aiplatform.Endpoint")
 @mock.patch("google.cloud.aiplatform.init")
-def test_undeploy_all_models(mock_init, mock_endpoint_cls, mock_monitoring_job_cls):
+def test_undeploy_all_models(mock_init, mock_endpoint_cls):
     deployed = [_make_deployed_model("m1"), _make_deployed_model("m2")]
     mock_endpoint = mock.MagicMock()
     mock_endpoint.resource_name = (
@@ -35,7 +34,6 @@ def test_undeploy_all_models(mock_init, mock_endpoint_cls, mock_monitoring_job_c
         location=LOCATION,
         endpoint_id=ENDPOINT_ID,
         deployed_model_id="",
-        delete_monitoring_job=False,
         delete_endpoint_if_empty=False,
     )
 
@@ -48,10 +46,9 @@ def test_undeploy_all_models(mock_init, mock_endpoint_cls, mock_monitoring_job_c
     mock_endpoint.undeploy.assert_any_call("m2")
 
 
-@mock.patch("google.cloud.aiplatform.ModelDeploymentMonitoringJob")
 @mock.patch("google.cloud.aiplatform.Endpoint")
 @mock.patch("google.cloud.aiplatform.init")
-def test_undeploy_single_model(mock_init, mock_endpoint_cls, mock_monitoring_job_cls):
+def test_undeploy_single_model(mock_init, mock_endpoint_cls):
     deployed = [_make_deployed_model("m1"), _make_deployed_model("m2")]
     mock_endpoint = mock.MagicMock()
     mock_endpoint.resource_name = (
@@ -66,19 +63,15 @@ def test_undeploy_single_model(mock_init, mock_endpoint_cls, mock_monitoring_job
         location=LOCATION,
         endpoint_id=ENDPOINT_ID,
         deployed_model_id="m2",
-        delete_monitoring_job=False,
         delete_endpoint_if_empty=False,
     )
 
     mock_endpoint.undeploy.assert_called_once_with("m2", traffic_split={"m1": 100})
 
 
-@mock.patch("google.cloud.aiplatform.ModelDeploymentMonitoringJob")
 @mock.patch("google.cloud.aiplatform.Endpoint")
 @mock.patch("google.cloud.aiplatform.init")
-def test_undeploy_single_model_raises_when_not_found(
-    mock_init, mock_endpoint_cls, mock_monitoring_job_cls
-):
+def test_undeploy_single_model_raises_when_not_found(mock_init, mock_endpoint_cls):
     deployed = [_make_deployed_model("m1")]
     mock_endpoint = mock.MagicMock()
     mock_endpoint.list_models.return_value = deployed
@@ -90,15 +83,13 @@ def test_undeploy_single_model_raises_when_not_found(
             location=LOCATION,
             endpoint_id=ENDPOINT_ID,
             deployed_model_id="m99",
-            delete_monitoring_job=False,
             delete_endpoint_if_empty=False,
         )
 
 
-@mock.patch("google.cloud.aiplatform.ModelDeploymentMonitoringJob")
 @mock.patch("google.cloud.aiplatform.Endpoint")
 @mock.patch("google.cloud.aiplatform.init")
-def test_no_models_is_no_op(mock_init, mock_endpoint_cls, mock_monitoring_job_cls):
+def test_no_models_is_no_op(mock_init, mock_endpoint_cls):
     mock_endpoint = mock.MagicMock()
     mock_endpoint.list_models.return_value = []
     mock_endpoint_cls.return_value = mock_endpoint
@@ -107,80 +98,15 @@ def test_no_models_is_no_op(mock_init, mock_endpoint_cls, mock_monitoring_job_cl
         project=PROJECT,
         location=LOCATION,
         endpoint_id=ENDPOINT_ID,
-        delete_monitoring_job=False,
         delete_endpoint_if_empty=False,
     )
 
     mock_endpoint.undeploy.assert_not_called()
 
 
-@mock.patch("google.cloud.aiplatform.ModelDeploymentMonitoringJob")
 @mock.patch("google.cloud.aiplatform.Endpoint")
 @mock.patch("google.cloud.aiplatform.init")
-def test_delete_monitoring_job(mock_init, mock_endpoint_cls, mock_monitoring_job_cls):
-    deployed = [_make_deployed_model("m1")]
-    mock_endpoint = mock.MagicMock()
-    mock_endpoint.resource_name = (
-        f"projects/{PROJECT}/locations/{LOCATION}/endpoints/{ENDPOINT_ID}"
-    )
-    mock_endpoint.display_name = "my-endpoint"
-    mock_endpoint.list_models.return_value = deployed
-    mock_endpoint_cls.return_value = mock_endpoint
-
-    mock_job = mock.MagicMock()
-    mock_job.state.name = "JOB_STATE_RUNNING"
-    mock_job.resource_name = "projects/test/locations/eu/monitoringJobs/789"
-    mock_monitoring_job_cls.list.return_value = [mock_job]
-
-    undeploy_model(
-        project=PROJECT,
-        location=LOCATION,
-        endpoint_id=ENDPOINT_ID,
-        delete_monitoring_job=True,
-        delete_endpoint_if_empty=False,
-    )
-
-    mock_monitoring_job_cls.list.assert_called_once_with(
-        filter='display_name="my-endpoint-monitoring"',
-        project=PROJECT,
-        location=LOCATION,
-    )
-    mock_job.pause.assert_called_once()
-    mock_job.delete.assert_called_once()
-
-
-@mock.patch("google.cloud.aiplatform.ModelDeploymentMonitoringJob")
-@mock.patch("google.cloud.aiplatform.Endpoint")
-@mock.patch("google.cloud.aiplatform.init")
-def test_delete_monitoring_job_skips_terminal_states(
-    mock_init, mock_endpoint_cls, mock_monitoring_job_cls
-):
-    mock_endpoint = mock.MagicMock()
-    mock_endpoint.display_name = "my-endpoint"
-    mock_endpoint.list_models.return_value = []
-    mock_endpoint_cls.return_value = mock_endpoint
-
-    mock_job = mock.MagicMock()
-    mock_job.state.name = "JOB_STATE_SUCCEEDED"
-    mock_job.resource_name = "projects/test/locations/eu/monitoringJobs/789"
-    mock_monitoring_job_cls.list.return_value = [mock_job]
-
-    undeploy_model(
-        project=PROJECT,
-        location=LOCATION,
-        endpoint_id=ENDPOINT_ID,
-        delete_monitoring_job=True,
-        delete_endpoint_if_empty=False,
-    )
-
-    mock_job.pause.assert_not_called()
-    mock_job.delete.assert_called_once()
-
-
-@mock.patch("google.cloud.aiplatform.ModelDeploymentMonitoringJob")
-@mock.patch("google.cloud.aiplatform.Endpoint")
-@mock.patch("google.cloud.aiplatform.init")
-def test_delete_endpoint_if_empty(mock_init, mock_endpoint_cls, mock_monitoring_job_cls):
+def test_delete_endpoint_if_empty(mock_init, mock_endpoint_cls):
     deployed = [_make_deployed_model("m1")]
     mock_endpoint = mock.MagicMock()
     mock_endpoint.resource_name = (
@@ -199,18 +125,16 @@ def test_delete_endpoint_if_empty(mock_init, mock_endpoint_cls, mock_monitoring_
         project=PROJECT,
         location=LOCATION,
         endpoint_id=ENDPOINT_ID,
-        delete_monitoring_job=False,
         delete_endpoint_if_empty=True,
     )
 
     empty_endpoint.delete.assert_called_once()
 
 
-@mock.patch("google.cloud.aiplatform.ModelDeploymentMonitoringJob")
 @mock.patch("google.cloud.aiplatform.Endpoint")
 @mock.patch("google.cloud.aiplatform.init")
 def test_delete_endpoint_if_empty_skipped_when_still_has_models(
-    mock_init, mock_endpoint_cls, mock_monitoring_job_cls
+    mock_init, mock_endpoint_cls
 ):
     deployed = [_make_deployed_model("m1")]
     mock_endpoint = mock.MagicMock()
@@ -227,7 +151,6 @@ def test_delete_endpoint_if_empty_skipped_when_still_has_models(
         location=LOCATION,
         endpoint_id=ENDPOINT_ID,
         deployed_model_id="m1",
-        delete_monitoring_job=False,
         delete_endpoint_if_empty=True,
     )
 
