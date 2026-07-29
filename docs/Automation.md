@@ -18,10 +18,12 @@ limitations under the License.
 
 ## Overview
 
-There are six CI/CD pipelines
+Pipeline schedules are managed with the Vertex AI [`PipelineJobSchedule`](https://cloud.google.com/vertex-ai/docs/pipelines/schedule-pipeline-run) API (configured in [`pipelines/variables/variables.yml`](../pipelines/variables/variables.yml)), not Cloud Scheduler or Pub/Sub. See [Infrastructure.md](Infrastructure.md#schedule-pipelines) and [Production.md](Production.md#deploying-a-release-to-the-test-environment) for details.
+
+There are six CI/CD pipelines:
 
 1. `pr-checks.yaml` - runs pre-commit checks and unit tests on the custom KFP components, and checks that the ML pipelines (training and prediction) can compile.
-1. `trigger-tests.yaml` - runs unit tests for the Cloud Function located in [terraform/modules/cloudfunction](/terraform/modules/cloudfunction/). If you don't need to change this code, you can ignore this CI/CD pipeline.
+1. `trigger-tests.yaml` - runs unit tests for legacy Cloud Function code under [terraform/modules/cloudfunction](/terraform/modules/cloudfunction/). Scheduling no longer uses that path; you can ignore this pipeline unless you still maintain that module.
 1. `e2e-test.yaml` - runs end-to-end tests of the training and prediction pipeline.
 1. `release.yaml` - compiles training and prediction pipelines, then copies the compiled pipelines to the chosen GCS destination (versioned by git tag).
 1. `terraform-plan.yaml` - Checks the Terraform configuration under `terraform/envs/<env>` (e.g. `terraform/envs/test`), and produces a summary of any proposed changes that will be applied on merge to the main branch.
