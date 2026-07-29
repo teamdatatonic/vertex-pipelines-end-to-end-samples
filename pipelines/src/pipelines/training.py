@@ -157,9 +157,9 @@ def pipeline(
     project: str = env.get("VERTEX_PROJECT_ID"),
     location: str = env.get("VERTEX_LOCATION"),
     bq_location: str = env.get("BQ_LOCATION"),
-    bq_source_uri: str = f"{env.get('VERTEX_PROJECT_ID')}.{env.get('BQ_DATASET_ID', 'ml_dataset')}.{env.get('BQ_TABLE_ID', 'taxi_trips')}",
+    bq_source_uri: str = f"{env.get('VERTEX_PROJECT_ID')}.{env.get('BQ_DATASET_ID', 'chicago_taxi_trips')}.{env.get('BQ_TABLE_ID', 'taxi_trips')}",
     model_name: str = "xgb_regressor",
-    dataset: str = env.get("BQ_DATASET_ID", "ml_dataset"),
+    dataset: str = env.get("BQ_DATASET_ID", "chicago_taxi_trips"),
     timestamp: str = "2013-08-01 00:00:00",
     test_data_gcs_uri: str = "",
 ):
