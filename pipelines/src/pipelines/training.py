@@ -17,24 +17,32 @@ from os import environ as env
 from google_cloud_pipeline_components.v1.bigquery import BigqueryQueryJobOp
 from kfp import dsl
 from kfp.dsl import Dataset, Input, Metrics, Model, Output
+from pipelines.utils.load_config import load_variables
 from pipelines.utils.query import generate_query
 from components import extract_table, upload_model
 
 from shared.training_config import PreprocessingStep, TrainingConfig
 
+
+training_config = load_variables()
+_training_params = {
+    "label": "total_fare",
+    "n_estimators": 200,
+    "early_stopping_rounds": 10,
+    "objective": "reg:squarederror",
+    "booster": "gbtree",
+    "learning_rate": 0.3,
+    "min_split_loss": 0,
+    "max_depth": 6,
+    "train_test_split_size": 0.2,
+    "train_valid_split_size": 0.25,
+    "train_test_random_state": 1,
+    "train_valid_random_state": 1,
+    **training_config.get("training", {}),
+}
+
 config = TrainingConfig(
-    label="total_fare",
-    n_estimators=200,
-    early_stopping_rounds=10,
-    objective="reg:squarederror",
-    booster="gbtree",
-    learning_rate=0.3,
-    min_split_loss=0,
-    max_depth=6,
-    train_test_split_size=0.2,
-    train_valid_split_size=0.25,
-    train_test_random_state=1,
-    train_valid_random_state=1,
+    **_training_params,
     preprocessing=[
         PreprocessingStep(
             encoder="StandardScaler",
@@ -67,9 +75,15 @@ MODEL_PARAMS = config.get_model_params()
 SPLIT_PARAMS = config.get_split_params()
 PRIMARY_METRIC = config.primary_metric
 
-RESOURCE_SUFFIX = env.get("RESOURCE_SUFFIX", "default")
-TRAINING_IMAGE = f"{env['CONTAINER_IMAGE_REGISTRY']}/training:{RESOURCE_SUFFIX}"
-PREDICTION_IMAGE = f"{env['CONTAINER_IMAGE_REGISTRY']}/prediction:{RESOURCE_SUFFIX}"
+# Prefer env so CI (e.g. e2e-test) can override YAML with COMMIT_SHA / registry.
+RESOURCE_SUFFIX = env.get("RESOURCE_SUFFIX") or training_config.get(
+    "resource_suffix", "default"
+)
+CONTAINER_IMAGE_REGISTRY = env.get("CONTAINER_IMAGE_REGISTRY") or training_config.get(
+    "container_image_registry", ""
+)
+TRAINING_IMAGE = f"{CONTAINER_IMAGE_REGISTRY}/training:{RESOURCE_SUFFIX}"
+PREDICTION_IMAGE = f"{CONTAINER_IMAGE_REGISTRY}/prediction:{RESOURCE_SUFFIX}"
 
 
 @dsl.container_component
@@ -115,10 +129,10 @@ def pipeline(
     project: str = env.get("VERTEX_PROJECT_ID"),
     location: str = env.get("VERTEX_LOCATION"),
     bq_location: str = env.get("BQ_LOCATION"),
-    bq_source_uri: str = "bigquery-public-data.chicago_taxi_trips.taxi_trips",
+    bq_source_uri: str = f"{env.get('VERTEX_PROJECT_ID')}.{env.get('BQ_DATASET_ID', 'chicago_taxi_trips')}.{env.get('BQ_TABLE_ID', 'taxi_trips')}",
     model_name: str = "xgb_regressor",
-    dataset: str = "turbo_templates",
-    timestamp: str = "2024-01-01 00:00:00",
+    dataset: str = env.get("BQ_DATASET_ID", "chicago_taxi_trips"),
+    timestamp: str = "2013-08-01 00:00:00",
     test_data_gcs_uri: str = "",
 ):
     """

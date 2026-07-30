@@ -42,19 +42,12 @@ module "vertex_deployment" {
   region     = var.region
 }
 
-# Cloud Scheduler jobs (for triggering pipelines)
-module "scheduler" {
-  for_each            = var.cloud_schedulers_config
-  source              = "../../modules/scheduled_pipelines"
-  project_id          = var.project_id
-  region              = var.region
-  name                = each.key
-  description         = lookup(each.value, "description", null)
-  schedule            = each.value.schedule
-  time_zone           = lookup(each.value, "time_zone", "UTC")
-  topic_name          = module.vertex_deployment.pubsub_topic_id
-  template_path       = each.value.template_path
-  enable_caching      = lookup(each.value, "enable_caching", null)
-  pipeline_parameters = lookup(each.value, "pipeline_parameters", null)
-  depends_on          = [module.vertex_deployment]
+# BigQuery dataset for ML data
+module "bigquery" {
+  source      = "../../modules/bigquery"
+  project_id  = var.project_id
+  region      = var.region
+  dataset_id  = var.dataset_id
+  description = "Dataset for ML pipeline data"
+  depends_on  = [module.vertex_deployment]
 }

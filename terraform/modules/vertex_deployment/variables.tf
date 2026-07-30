@@ -33,12 +33,9 @@ variable "gcp_service_list" {
     "bigquery.googleapis.com",
     "bigquerydatatransfer.googleapis.com",
     "cloudbuild.googleapis.com",
-    "cloudfunctions.googleapis.com",
-    "cloudscheduler.googleapis.com",
     "dataflow.googleapis.com",
     "iam.googleapis.com",
     "monitoring.googleapis.com",
-    "pubsub.googleapis.com",
     "secretmanager.googleapis.com",
     "storage-api.googleapis.com",
     "storage-component.googleapis.com",
@@ -56,72 +53,15 @@ variable "disable_dependent_services" {
   type        = bool
   default     = true
 }
-variable "cloudfunction_region" {
-  description = "Google Cloud region to use for the Cloud Function (and CF staging bucket). Defaults to the same as var.region"
-  type        = string
-  default     = null
-}
-
-variable "pubsub_topic_name" {
-  description = "Name of the Pub/Sub topic to create for triggering pipelines."
-  type        = string
-  default     = "vertex-pipeline-trigger"
-}
-
-variable "cloudfunction_name" {
-  description = "Name of the Cloud Function"
-  type        = string
-  default     = "vertex-pipelines-trigger"
-}
-
-variable "cloudfunction_description" {
-  description = "Description for the Cloud Function"
-  type        = string
-  default     = "Cloud Function used to trigger Vertex Pipelines"
-}
-
-variable "cloudfunction_vpc_connector" {
-  description = "The VPC Network Connector that the cloud function can connect to. It should be set up as fully-qualified URI. The format of this field is projects/*/locations/*/connectors/*"
-  type        = string
-  default     = null
-}
-
-variable "cloudfunction_vpc_connector_egress_settings" {
-  description = "The egress settings for the connector, controlling what traffic is diverted through it. Allowed values are ALL_TRAFFIC and PRIVATE_RANGES_ONLY. Defaults to PRIVATE_RANGES_ONLY. If unset, this field preserves the previously set value."
-  type        = string
-  default     = null
-}
-
-variable "cloud_schedulers_config" {
-  description = "Map of configurations for cloud scheduler jobs (each a different pipeline schedule)."
-  type = map(object({
-    name                = string
-    description         = string
-    schedule            = string
-    time_zone           = string
-    template_path       = string
-    enable_caching      = bool
-    pipeline_parameters = map(any)
-  }))
-  default = {}
-}
 
 variable "pipelines_sa_project_roles" {
   description = "List of project IAM roles to be granted to the Vertex Pipelines service account."
   type        = list(string)
   default = [
     "roles/aiplatform.user",
+    "roles/iam.serviceAccountUser",
     "roles/logging.logWriter",
     "roles/bigquery.dataEditor",
     "roles/bigquery.jobUser",
-  ]
-}
-
-variable "cloudfunction_sa_project_roles" {
-  description = "List of project IAM roles to be granted to the Cloud Function service account."
-  type        = list(string)
-  default = [
-    "roles/aiplatform.user",
-    "roles/logging.logWriter",
   ]
 }

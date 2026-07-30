@@ -68,49 +68,36 @@ Similarly, your compiled prediction pipeline will be published in these location
 
 ## Deploying a release to the test environment
 
-Now that you have created a release, and the compiled pipelines have been copied to the test and prod environments, you can now schedule your pipelines to run in those environments.
+Now that you have created a release, and the compiled pipelines have been copied to the test and prod environments, you can schedule your pipelines to run in those environments.
+
+Vertex Pipelines are scheduled with the Vertex AI [`PipelineJobSchedule`](https://cloud.google.com/vertex-ai/docs/pipelines/schedule-pipeline-run) API. Scheduler settings live in [`pipelines/variables/variables.yml`](../pipelines/variables/variables.yml). When a training or prediction pipeline is triggered (for example via `make training` / `make prediction`), the scheduler config for the current environment is used to create or remove the schedule.
 
 Of course, we will begin by scheduling the pipelines to run in the test environment.
 
 Create a new branch off the main/master branch e.g. `git checkout -b test-env-scheduling`
 
-1. Copy the file `terraform/modules/scheduled_pipelines/scheduled_jobs.auto.tfvars.example` to `terraform/envs/test/scheduled_jobs.auto.tfvars`
-1. In this file you will see the variable `cloud_schedulers_config`. Here we pass in a map of all the Cloud Scheduler jobs that we want to deploy. Continuing with our example earlier, the code below shows how we can schedule the training pipeline to run on the first of every month, and the prediction pipeline will run every night:
+1. Open [`pipelines/variables/variables.yml`](../pipelines/variables/variables.yml) and update the `staging` (or whichever environment maps to your test project) `scheduler` block. Continuing with our example earlier, the config below schedules the training pipeline on the first of every month, and the prediction pipeline every night:
 
-```
-cloud_schedulers_config = {
+```yaml
+scheduler:
+  enable_training_scheduler: true
+  training_cron: "0 0 1 * *"  # first of every month
+  training_max_concurrent_run_count: 1
+  training_max_run_count: 0  # 0 = infinite
 
-  training = {
-    description  = "Trigger training pipeline in Vertex AI"
-    schedule     = "0 0 1 * *"
-    time_zone    = "UTC"
-    template_path = "https://<GCP region>-kfp.pkg.dev/<Project ID of test project>/vertex-pipelines/xgboost-train-pipeline/v1.2"
-    enable_caching = null
-    pipeline_parameters = {
-      // Add pipeline parameters which are expected by your pipeline here e.g.
-      // project = "my-project-id"
-    },
-  },
-
-  prediction = {
-    description  = "Trigger prediction pipeline in Vertex AI"
-    schedule     = "0 0 * * *"
-    time_zone    = "UTC"
-    template_path = "https://<GCP region>-kfp.pkg.dev/<Project ID of test project>/vertex-pipelines/xgboost-prediction-pipeline/v1.2"
-    enable_caching = null
-    pipeline_parameters = {
-      // Add pipeline parameters which are expected by your pipeline here e.g.
-      // project = "my-project-id"
-    },
-  },
-
-}
+  enable_prediction_scheduler: true
+  prediction_cron: "0 0 * * *"  # every night
+  prediction_max_concurrent_run_count: 1
+  prediction_max_run_count: 0
 ```
 
-4. Commit these change to your branch, and push the branch to GitHub
-5. Open a Pull Request from this branch to the main/master branch. As part of the CI checks (in Cloud Build), you should see a Terraform plan that describes the changes you have made to the Terraform config
-6. Merge the PR to deploy the Cloud Scheduler jobs
+1. Ensure `vertex_project_staging` (or the matching project ID key) in `variables.yml` matches the Google Cloud project for that environment, and that `VERTEX_PROJECT_ID` is set accordingly when you trigger the pipeline.
+1. Commit these changes to your branch, and push the branch to GitHub.
+1. Open a Pull Request from this branch to the main/master branch and merge it once reviews and CI checks pass.
+1. Trigger the training and/or prediction pipeline against the test environment (for example with `make training` / `make prediction` using that project's `env.sh`). That run creates or updates the `PipelineJobSchedule` resources according to the config above.
+
+To disable a schedule later, set the corresponding `enable_*_scheduler` flag to `false` and trigger the pipeline again; existing schedules for that pipeline type are removed.
 
 ## Deploying a release to the production environment
 
-Once you are happy with how `v1.2` is working in the test environment, you can follow the same process for the prod environment (using `terraform/envs/prod`, swapping the necessary values out for the different environment e.g. Artifact Registry names).
+Once you are happy with how `v1.2` is working in the test environment, follow the same process for prod: update the `prod` `scheduler` block in `variables.yml`, merge, then trigger the pipelines against the prod project so the schedules are created.

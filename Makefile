@@ -21,7 +21,7 @@ help: ## Display this help screen.
 
 env ?= dev
 AUTO_APPROVE_FLAG :=
-deploy: ## Deploy infrastructure to your project. Optionally set env=<dev|test|prod> (default=dev).
+deploy: ## Deploy infrastructure to your project. This runs Terraform plan and applyOptionally set env=<dev|test|prod> (default=dev).
 	@echo "################################################################################" && \
 	echo "# Deploy $$env environment" && \
 	echo "################################################################################" && \
@@ -30,7 +30,7 @@ deploy: ## Deploy infrastructure to your project. Optionally set env=<dev|test|p
 	fi; \
 	cd terraform/envs/$(env) && \
 	terraform init -backend-config='bucket=${VERTEX_PROJECT_ID}-tfstate' && \
-	terraform apply -var 'project_id=${VERTEX_PROJECT_ID}' -var 'region=${VERTEX_LOCATION}' $$AUTO_APPROVE_FLAG
+	terraform apply -var 'project_id=${VERTEX_PROJECT_ID}' -var 'region=${VERTEX_LOCATION}' -var 'dataset_id=${BQ_DATASET_ID}' $$AUTO_APPROVE_FLAG
 
 undeploy: ## Destroy the infrastructure in your project. Optionally set env=<dev|test|prod> (default=dev).
 	@echo "################################################################################" && \
@@ -41,20 +41,20 @@ undeploy: ## Destroy the infrastructure in your project. Optionally set env=<dev
 	fi; \
 	cd terraform/envs/$(env) && \
 	terraform init -backend-config='bucket=${VERTEX_PROJECT_ID}-tfstate' && \
-	terraform destroy -var 'project_id=${VERTEX_PROJECT_ID}' -var 'region=${VERTEX_LOCATION}' $$AUTO_APPROVE_FLAG
+	terraform destroy -var 'project_id=${VERTEX_PROJECT_ID}' -var 'region=${VERTEX_LOCATION}' -var 'dataset_id=${BQ_DATASET_ID}' $$AUTO_APPROVE_FLAG
 
 install: ## Set up local Python environment for development.
 	@echo "################################################################################" && \
-	echo "# Install Python dependencies" && \
+	echo " Install Python dependencies" && \
 	echo "################################################################################" && \
 	cd config && \
-	poetry install && \
+	poetry lock && poetry install --no-root && \
 	cd ../model && \
-	poetry install --no-root && \
+	poetry lock && poetry install --no-root && \
 	cd ../pipelines && \
-	poetry install --with dev && \
+	poetry lock && poetry install --with dev && \
 	cd ../components && \
-	poetry install --with dev
+	poetry lock && poetry install --with dev
 
 compile: ## Compile pipeline. Set pipeline=<training|prediction>.
 	@echo "################################################################################" && \

@@ -12,16 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from .deploy_model import deploy_model
 from .extract_table import extract_table
 from .lookup_model import lookup_model
 from .model_batch_predict import model_batch_predict
+from .predict_on_endpoint import predict_on_endpoint
+from .undeploy_model import undeploy_model
 from .upload_model import upload_model
 
 
 __version__ = "0.0.1"
 __all__ = [
+    "deploy_model",
     "extract_table",
     "lookup_model",
     "model_batch_predict",
+    "predict_on_endpoint",
+    "undeploy_model",
     "upload_model",
 ]
