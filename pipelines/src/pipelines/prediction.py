@@ -17,8 +17,15 @@ from os import environ as env
 from google_cloud_pipeline_components.v1.bigquery import BigqueryQueryJobOp
 from kfp import dsl
 
+from pipelines.utils.load_config import load_variables
 from pipelines.utils.query import generate_query
-from components import lookup_model, model_batch_predict
+from components import (
+    deploy_model,
+    lookup_model,
+    model_batch_predict,
+    predict_on_endpoint,
+    undeploy_model,
+)
 
 
 RESOURCE_SUFFIX = env.get("RESOURCE_SUFFIX", "default")
@@ -43,21 +50,25 @@ MONITORED_FEATURES = {
 @dsl.pipeline(name="turbo-prediction-pipeline")
 def pipeline(
     project: str = env.get("VERTEX_PROJECT_ID"),
-    location: str = env.get("VERTEX_LOCATION"),
-    bq_location: str = env.get("BQ_LOCATION"),
-    bq_source_uri: str = "bigquery-public-data.chicago_taxi_trips.taxi_trips",
-    model_name: str = "xgb_regressor",
-    dataset: str = "turbo_templates",
-    timestamp: str = "2024-01-01 00:00:00",
-    machine_type: str = "n2-standard-4",
+    location: str = prediction_config.get("vertex_location", "europe-west2"),
+    bq_location: str = prediction_config.get("bq_location", "europe-west2"),
+    bq_source_uri: str = f"{env.get('VERTEX_PROJECT_ID')}.{prediction_config.get('bq_dataset_id', 'ml_dataset')}.{prediction_config.get('bq_table_id', 'taxi_trips')}",
+    model_name: str = prediction_config.get("model_name", "xgb_regressor"),
+    dataset: str = prediction_config.get("bq_dataset_id", "turbo_templates"),
+    timestamp: str = "2013-08-01 00:00:00",
+    machine_type: str = prediction_config.get("machine_type", "n2-standard-4"),
     min_replicas: int = 3,
     max_replicas: int = 10,
+    endpoint_name: str = ENDPOINT_NAME,
+    service_account: str = env.get("VERTEX_SA_EMAIL"),
 ):
     """
     Prediction pipeline which:
      1. Looks up the default model version (champion).
-     2. Runs a batch prediction job with BigQuery as input and output
-     3. Runs Model Monitoring v2 (feature drift) against the batch job's output
+     2. Either runs a batch prediction job (prediction_type=batch) or deploys
+        the model to an endpoint, smoke-tests it, then undeploys
+        (prediction_type=endpoint). Controlled by prediction_type in
+        variables.yml.
 
     Args:
         project (str): project id of the Google Cloud project
@@ -75,6 +86,10 @@ def pipeline(
             Vertex Batch Prediction job for horizontal scalability
         max_replicas (int): Maximum no of machines to distribute the
             Vertex Batch Prediction job for horizontal scalability
+        endpoint_name (str): Display name for the Vertex AI endpoint
+            (only used when prediction_type=endpoint)
+        service_account (str): Service account email for the deployed model
+            (only used when prediction_type=endpoint)
     """
 
     queries_folder = pathlib.Path(__file__).parent / "queries"
@@ -102,11 +117,29 @@ def pipeline(
         fail_on_model_not_found=True,
     ).set_display_name("Look up champion model")
 
-    (
-        model_batch_predict(
-            model=lookup_op.outputs["model"],
-            job_display_name="turbo-template-predict-job",
+    if PREDICTION_TYPE == "endpoint":
+        deploy_op = (
+            deploy_model(
+                vertex_model=lookup_op.outputs["model"],
+                project=project,
+                location=location,
+                endpoint_name=endpoint_name,
+                service_account=service_account,
+                machine_type=machine_type,
+                min_replica_count=min_replicas,
+                max_replica_count=max_replicas,
+            )
+            .after(prep_op)
+            .set_display_name("Deploy model to endpoint")
+        )
+
+        predict_op = predict_on_endpoint(
+            endpoint_id=deploy_op.outputs["endpoint_id"],
+            project=project,
             location=location,
+        ).set_display_name("Smoke-test predictions")
+
+        undeploy_model(
             project=project,
             source_uri=f"bq://{project}.{dataset}.{table}",
             destination_uri=f"bq://{project}.{dataset}",
@@ -122,7 +155,33 @@ def pipeline(
             monitored_features=MONITORED_FEATURES,
             default_drift_threshold=DEFAULT_DRIFT_THRESHOLD,
             notification_emails=NOTIFICATION_EMAILS,
+            location=location,
+            endpoint_id=deploy_op.outputs["endpoint_id"],
+            delete_endpoint_if_empty=True,
+        ).after(predict_op).set_display_name("Undeploy model")
+
+    else:
+        (
+            model_batch_predict(
+                model=lookup_op.outputs["model"],
+                job_display_name="turbo-template-predict-job",
+                location=location,
+                project=project,
+                source_uri=f"bq://{project}.{dataset}.{table}",
+                destination_uri=f"bq://{project}.{dataset}",
+                source_format="bigquery",
+                destination_format="bigquery",
+                instance_config={
+                    "instanceType": "object",
+                },
+                machine_type=machine_type,
+                starting_replica_count=min_replicas,
+                max_replica_count=max_replicas,
+                monitoring_training_dataset=lookup_op.outputs["training_dataset"],
+                monitoring_alert_email_addresses=ALERT_EMAILS,
+                notification_channels=NOTIFICATION_CHANNELS,
+                monitoring_skew_config=SKEW_THRESHOLDS,
+            )
+            .after(prep_op)
+            .set_display_name("Model batch prediction")
         )
-        .after(prep_op)
-        .set_display_name("Run prediction job")
-    )

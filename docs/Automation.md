@@ -18,10 +18,12 @@ limitations under the License.
 
 ## Overview
 
-There are six CI/CD pipelines
+Pipeline schedules are managed with the Vertex AI [`PipelineJobSchedule`](https://cloud.google.com/vertex-ai/docs/pipelines/schedule-pipeline-run) API (configured in [`pipelines/variables/variables.yml`](../pipelines/variables/variables.yml)), not Cloud Scheduler or Pub/Sub. See [Infrastructure.md](Infrastructure.md#schedule-pipelines) and [Production.md](Production.md#deploying-a-release-to-the-test-environment) for details.
+
+There are six CI/CD pipelines:
 
 1. `pr-checks.yaml` - runs pre-commit checks and unit tests on the custom KFP components, and checks that the ML pipelines (training and prediction) can compile.
-1. `trigger-tests.yaml` - runs unit tests for the Cloud Function located in [terraform/modules/cloudfunction](/terraform/modules/cloudfunction/). If you don't need to change this code, you can ignore this CI/CD pipeline.
+1. `trigger-tests.yaml` - runs unit tests for legacy Cloud Function code under [terraform/modules/cloudfunction](/terraform/modules/cloudfunction/). Scheduling no longer uses that path; you can ignore this pipeline unless you still maintain that module.
 1. `e2e-test.yaml` - runs end-to-end tests of the training and prediction pipeline.
 1. `release.yaml` - compiles training and prediction pipelines, then copies the compiled pipelines to the chosen GCS destination (versioned by git tag).
 1. `terraform-plan.yaml` - Checks the Terraform configuration under `terraform/envs/<env>` (e.g. `terraform/envs/test`), and produces a summary of any proposed changes that will be applied on merge to the main branch.
@@ -63,7 +65,7 @@ Set up a trigger for the `e2e-test.yaml` pipeline, and provide substitution valu
 | `_TEST_VERTEX_PROJECT_ID` | Google Cloud project ID in which you want to run the ML pipelines in the E2E tests as part of the CI/CD pipeline. | Project ID for the DEV environment |
 | `_TEST_VERTEX_SA_EMAIL` | Email address of the service account you want to use to run the ML pipelines in the E2E tests as part of the CI/CD pipeline. | `vertex-pipelines@<Project ID for dev environment>.iam.gserviceaccount.com` |
 | `_TEST_ENABLE_PIPELINE_CACHING` | Override the default caching behaviour of the ML pipelines. Leave blank to use the default caching behaviour. | `False` |
-| `_TEST_BQ_LOCATION` | The location of BigQuery datasets used in training and prediction pipelines. | `US` or `EU` if using multi-region datasets |
+| `_TEST_BQ_LOCATION` | Deprecated for e2e — `BQ_LOCATION` is set from `_TEST_VERTEX_LOCATION` so the BQ job region matches Vertex. | Leave unset / ignore if present on the trigger |
 
 We recommend to enable comment control for this trigger (select `Required` under `Comment Control`). This will mean that the end-to-end tests will only run once a repository collaborator or owner comments `/gcbrun` on the pull request.
 This will help to avoid unnecessary runs of the ML pipelines while a Pull Request is still being worked on, as they can take a long time (and can be expensive to run on every Pull Request!)

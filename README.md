@@ -58,6 +58,7 @@ _In future, this will be replaced with the Vertex Pipelines Scheduler (once ther
 
 - [Terraform](https://www.terraform.io/) for managing cloud infrastructure
 - [tfswitch](https://tfswitch.warrensbox.com/) to automatically choose and download an appropriate Terraform version (recommended)
+- **Python 3.12.8** (pinned in [`.python-version`](.python-version); also used for pipeline component base images and local Poetry envs)
 - [Pyenv](https://github.com/pyenv/pyenv#installation) for managing Python versions
 - [Poetry](https://python-poetry.org/) for managing Python dependencies
 - [Google Cloud SDK (gcloud)](https://cloud.google.com/sdk/docs/quickstart)
@@ -94,12 +95,14 @@ It describes the scheduling of pipelines and how to tear down infrastructure.
 **Install dependencies:**
 
 ```bash
-pyenv install -skip-existing                          # install Python
+pyenv install --skip-existing 3.12.8                  # install Python 3.12.8
 poetry config virtualenvs.prefer-active-python true   # configure Poetry
 make install                                          # install Python dependencies
 cd pipelines && poetry run pre-commit install         # install pre-commit hooks
 cp env.sh.example env.sh
 ```
+
+Use Python 3.12.x only (not 3.13/3.14). If Poetry recreates a broken `.venv`, point it at 3.12 explicitly, e.g. `cd components && poetry env use 3.12.8 && poetry install --with dev`.
 
 Update the environment variables for your dev environment in `env.sh`.
 
@@ -109,6 +112,8 @@ Update the environment variables for your dev environment in `env.sh`.
 gcloud auth login
 gcloud auth application-default login
 ```
+
+> **Note:** The `deploy_model` component deploys models to a Vertex AI endpoint using a custom service account. That requires the [Service Account User](https://cloud.google.com/iam/docs/service-account-permissions#user-role) role (`roles/iam.serviceAccountUser`), which includes `iam.serviceAccounts.actAs`, so the pipeline SA can attach itself to the endpoint deployment. See [Attach service accounts to resources](https://cloud.google.com/iam/docs/attach-service-accounts). If you deployed infrastructure before this component was added, re-run `make deploy` while authenticated (commands above) so Terraform can grant the permission.
 
 ## Configure Pipeline Variables
 
