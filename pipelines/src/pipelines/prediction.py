@@ -20,23 +20,32 @@ from kfp import dsl
 from pipelines.utils.load_config import load_variables
 from pipelines.utils.query import generate_query
 from components import (
+    create_model_monitor,
     deploy_model,
     lookup_model,
     model_batch_predict,
     predict_on_endpoint,
+    run_model_monitoring_job,
     undeploy_model,
 )
 
 
-RESOURCE_SUFFIX = env.get("RESOURCE_SUFFIX", "default")
+prediction_config = load_variables()
+# Prefer env so CI (e.g. e2e-test) can override YAML with COMMIT_SHA.
+RESOURCE_SUFFIX = env.get("RESOURCE_SUFFIX") or prediction_config.get(
+    "resource_suffix", "default"
+)
 
-# Model Monitoring v2 configuration for the batch prediction job. Set
-# NOTIFICATION_EMAILS to receive drift alerts. MONITORED_FEATURES maps each
-# feature (see preprocessing.sql) to its Model Monitoring v2 schema data type:
-# "float", "integer", "boolean", "string", or "categorical".
-NOTIFICATION_EMAILS = []
-DEFAULT_DRIFT_THRESHOLD = 0.3
-MONITORED_FEATURES = {
+ALERT_EMAILS = prediction_config.get("alert_emails", [])
+NOTIFICATION_CHANNELS = prediction_config.get("notification_channels", [])
+SKEW_THRESHOLDS = prediction_config.get("monitoring", {}).get(
+    "skew_thresholds", {"defaultSkewThreshold": {"value": 0.001}}
+)
+
+PREDICTION_TYPE = prediction_config.get("prediction_type", "batch")
+ENDPOINT_NAME = prediction_config.get("endpoint_name", "turbo-prediction-endpoint")
+
+_DEFAULT_MONITORED_FEATURES = {
     "dayofweek": "float",
     "hourofday": "float",
     "trip_distance": "float",
@@ -45,6 +54,13 @@ MONITORED_FEATURES = {
     "payment_type": "categorical",
     "company": "categorical",
 }
+_monitoring = prediction_config.get("monitoring", {})
+# Endpoint (online) Model Monitoring v2 only. Batch uses v1 skew below.
+MONITORING_ENABLED = _monitoring.get("enable", False)
+DEFAULT_DRIFT_THRESHOLD = _monitoring.get("default_drift_threshold", 0.3)
+MONITORED_FEATURES = _monitoring.get("monitored_features", _DEFAULT_MONITORED_FEATURES)
+NOTIFICATION_EMAILS = _monitoring.get("notification_emails") or ALERT_EMAILS
+LOGGING_SAMPLING_RATE = _monitoring.get("logging_sampling_rate", 0.3)
 
 
 @dsl.pipeline(name="turbo-prediction-pipeline")
@@ -52,7 +68,11 @@ def pipeline(
     project: str = env.get("VERTEX_PROJECT_ID"),
     location: str = prediction_config.get("vertex_location", "europe-west2"),
     bq_location: str = prediction_config.get("bq_location", "europe-west2"),
-    bq_source_uri: str = f"{env.get('VERTEX_PROJECT_ID')}.{prediction_config.get('bq_dataset_id', 'ml_dataset')}.{prediction_config.get('bq_table_id', 'taxi_trips')}",
+    bq_source_uri: str = (
+        f"{env.get('VERTEX_PROJECT_ID')}."
+        f"{prediction_config.get('bq_dataset_id', 'ml_dataset')}."
+        f"{prediction_config.get('bq_table_id', 'taxi_trips')}"
+    ),
     model_name: str = prediction_config.get("model_name", "xgb_regressor"),
     dataset: str = prediction_config.get("bq_dataset_id", "turbo_templates"),
     timestamp: str = "2013-08-01 00:00:00",
@@ -65,10 +85,11 @@ def pipeline(
     """
     Prediction pipeline which:
      1. Looks up the default model version (champion).
-     2. Either runs a batch prediction job (prediction_type=batch) or deploys
-        the model to an endpoint, smoke-tests it, then undeploys
-        (prediction_type=endpoint). Controlled by prediction_type in
-        variables.yml.
+     2. Either runs a batch prediction job with Model Monitoring v1 skew
+        detection (prediction_type=batch), or deploys the model to an endpoint,
+        smoke-tests it, optionally runs Model Monitoring v2 against logged
+        traffic, then undeploys (prediction_type=endpoint). Controlled by
+        prediction_type in variables.yml.
 
     Args:
         project (str): project id of the Google Cloud project
@@ -128,6 +149,8 @@ def pipeline(
                 machine_type=machine_type,
                 min_replica_count=min_replicas,
                 max_replica_count=max_replicas,
+                enable_request_response_logging=MONITORING_ENABLED,
+                logging_sampling_rate=LOGGING_SAMPLING_RATE,
             )
             .after(prep_op)
             .set_display_name("Deploy model to endpoint")
@@ -139,26 +162,40 @@ def pipeline(
             location=location,
         ).set_display_name("Smoke-test predictions")
 
+        undeploy_after = predict_op
+        if MONITORING_ENABLED:
+            monitor_op = create_model_monitor(
+                vertex_model=lookup_op.outputs["model"],
+                project=project,
+                location=location,
+                display_name=f"{endpoint_name}-monitor",
+                monitored_features=MONITORED_FEATURES,
+            ).set_display_name("Create model monitor")
+
+            undeploy_after = (
+                run_model_monitoring_job(
+                    project=project,
+                    location=location,
+                    model_monitor_name=monitor_op.outputs["model_monitor_name"],
+                    training_dataset_gcs_uri=lookup_op.outputs[
+                        "training_dataset_gcs_uri"
+                    ],
+                    target_bq_table_uri=deploy_op.outputs["logging_bq_table"],
+                    job_display_name=f"{endpoint_name}-monitoring",
+                    monitored_features=MONITORED_FEATURES,
+                    default_drift_threshold=DEFAULT_DRIFT_THRESHOLD,
+                    notification_emails=NOTIFICATION_EMAILS,
+                )
+                .after(predict_op)
+                .set_display_name("Run monitoring analysis")
+            )
+
         undeploy_model(
             project=project,
-            source_uri=f"bq://{project}.{dataset}.{table}",
-            destination_uri=f"bq://{project}.{dataset}",
-            source_format="bigquery",
-            destination_format="bigquery",
-            instance_config={
-                "instanceType": "object",
-            },
-            machine_type=machine_type,
-            starting_replica_count=min_replicas,
-            max_replica_count=max_replicas,
-            monitoring_training_gcs_uri=lookup_op.outputs["training_dataset_gcs_uri"],
-            monitored_features=MONITORED_FEATURES,
-            default_drift_threshold=DEFAULT_DRIFT_THRESHOLD,
-            notification_emails=NOTIFICATION_EMAILS,
             location=location,
             endpoint_id=deploy_op.outputs["endpoint_id"],
             delete_endpoint_if_empty=True,
-        ).after(predict_op).set_display_name("Undeploy model")
+        ).after(undeploy_after).set_display_name("Undeploy model")
 
     else:
         (
@@ -167,8 +204,8 @@ def pipeline(
                 job_display_name="turbo-template-predict-job",
                 location=location,
                 project=project,
-                source_uri=f"bq://{project}.{dataset}.{table}",
-                destination_uri=f"bq://{project}.{dataset}",
+                source_uri="bq://" + f"{project}.{dataset}.{table}",
+                destination_uri="bq://" + f"{project}.{dataset}",
                 source_format="bigquery",
                 destination_format="bigquery",
                 instance_config={

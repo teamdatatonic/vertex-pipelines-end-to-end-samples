@@ -35,7 +35,7 @@ def test_lookup_model(mock_model, tmp_path):
     mock_model.list.return_value = [mock_model]
 
     # Invoke the model look up
-    found_model_resource_name, _ = lookup_model(
+    found_model_resource_name, _, _ = lookup_model(
         model_name="my-model",
         location="europe-west4",
         project="my-project-id",
@@ -60,7 +60,7 @@ def test_lookup_model_when_no_models(mock_model, tmp_path):
     lookup_model returns an empty string.
     """
     mock_model.list.return_value = []
-    exported_model_resource_name, _ = lookup_model(
+    exported_model_resource_name, _, _ = lookup_model(
         model_name="my-model",
         location="europe-west4",
         project="my-project-id",
@@ -115,7 +115,7 @@ def test_lookup_model_extracts_training_dataset_gcs_uri(mock_model, tmp_path):
     mock_model.uri = str(model_dir)
     mock_model.list.return_value = [mock_model]
 
-    _, training_dataset_gcs_uri = lookup_model(
+    _, training_dataset, training_dataset_gcs_uri = lookup_model(
         model_name="my-model",
         location="europe-west4",
         project="my-project-id",
@@ -124,6 +124,7 @@ def test_lookup_model_extracts_training_dataset_gcs_uri(mock_model, tmp_path):
     )
 
     assert training_dataset_gcs_uri == "gs://my-bucket/train.csv"
+    assert training_dataset["gcsSource"]["uris"] == ["gs://my-bucket/train.csv"]
 
 
 @mock.patch("google.cloud.aiplatform.Model")
@@ -152,7 +153,7 @@ def test_lookup_model_normalizes_gcs_fuse_path(mock_model, tmp_path):
     mock_model.uri = str(model_dir)
     mock_model.list.return_value = [mock_model]
 
-    _, training_dataset_gcs_uri = lookup_model(
+    _, training_dataset, training_dataset_gcs_uri = lookup_model(
         model_name="my-model",
         location="europe-west4",
         project="my-project-id",
@@ -161,6 +162,9 @@ def test_lookup_model_normalizes_gcs_fuse_path(mock_model, tmp_path):
     )
 
     assert training_dataset_gcs_uri == "gs://my-bucket/path/to/train_data"
+    assert training_dataset["gcsSource"]["uris"] == [
+        "gs://my-bucket/path/to/train_data"
+    ]
 
 
 @mock.patch("google.cloud.aiplatform.Model")
@@ -173,7 +177,7 @@ def test_lookup_model_when_training_dataset_metadata_missing(mock_model, tmp_pat
     mock_model.uri = str(tmp_path / "model")
     mock_model.list.return_value = [mock_model]
 
-    _, training_dataset_gcs_uri = lookup_model(
+    _, training_dataset, training_dataset_gcs_uri = lookup_model(
         model_name="my-model",
         location="europe-west4",
         project="my-project-id",
@@ -182,3 +186,4 @@ def test_lookup_model_when_training_dataset_metadata_missing(mock_model, tmp_pat
     )
 
     assert training_dataset_gcs_uri == ""
+    assert training_dataset == {}

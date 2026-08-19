@@ -27,7 +27,12 @@ def lookup_model(
     model: Output[Model],
     fail_on_model_not_found: bool = False,
 ) -> NamedTuple(
-    "Outputs", [("model_resource_name", str), ("training_dataset_gcs_uri", str)]
+    "Outputs",
+    [
+        ("model_resource_name", str),
+        ("training_dataset", dict),
+        ("training_dataset_gcs_uri", str),
+    ],
 ):
     """
     Fetch a model given a model name (display name) and export to GCS.
@@ -43,9 +48,11 @@ def lookup_model(
     Returns:
         model_resource_name (str): Resource name of the found model. Empty string
             if model not found.
-        training_dataset_gcs_uri (str): GCS URI (CSV) of the training data used to
-            train this model, for use as a Model Monitoring v2 baseline dataset.
-            Empty string if the model's training dataset metadata is unavailable.
+        training_dataset (dict): Training dataset metadata for Model Monitoring v1
+            (batch prediction skew). Empty dict if unavailable.
+        training_dataset_gcs_uri (str): GCS URI (CSV) of the training data used as
+            a Model Monitoring v2 baseline for online/endpoint monitoring.
+            Empty string if unavailable.
     """
 
     import json
@@ -64,6 +71,7 @@ def lookup_model(
     )
     logging.info(f"found {len(models)} model(s)")
 
+    training_dataset = {}
     training_dataset_gcs_uri = ""
     model_resource_name = ""
     if len(models) == 0:
@@ -93,16 +101,17 @@ def lookup_model(
                 training_dataset_gcs_uri = uris[0]
                 # Older training runs stored the local Cloud Storage FUSE mount
                 # path (e.g. "/gcs/bucket/object") instead of a "gs://" URI.
-                # Model Monitoring v2 requires a proper "gs://" URI, so
-                # normalise it here rather than relying on every training run
-                # to have written the correct format.
+                # Model Monitoring v1 and v2 both require a proper "gs://" URI.
                 if training_dataset_gcs_uri.startswith("/gcs/"):
                     training_dataset_gcs_uri = (
                         "gs://" + training_dataset_gcs_uri[len("/gcs/") :]
                     )
+                    training_dataset.setdefault("gcsSource", {})["uris"] = [
+                        training_dataset_gcs_uri
+                    ]
         else:
             logging.warning("Training dataset metadata doesn't exist!")
     else:
         raise RuntimeError(f"Multiple models with name {model_name} were found.")
 
-    return model_resource_name, training_dataset_gcs_uri
+    return model_resource_name, training_dataset, training_dataset_gcs_uri
