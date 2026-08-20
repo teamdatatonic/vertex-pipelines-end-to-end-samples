@@ -84,11 +84,20 @@ def lookup_model(
     elif len(models) == 1:
         target_model = models[0]
         model_resource_name = target_model.resource_name
+        # Model.list() returns the default version, but resource_name is often
+        # unversioned. Stamp @version_id so deploy and Model Monitoring v2
+        # target the same champion version (Vertex allows one monitor per
+        # version; an unversioned name would be treated as version 1).
+        version_id = getattr(target_model, "version_id", None)
+        if isinstance(version_id, str) and version_id:
+            if "@" not in model_resource_name:
+                model_resource_name = f"{model_resource_name}@{version_id}"
+            model.metadata["versionId"] = version_id
         logging.info(f"model display name: {target_model.display_name}")
-        logging.info(f"model resource name: {target_model.resource_name}")
+        logging.info(f"model resource name: {model_resource_name}")
         logging.info(f"model uri: {target_model.uri}")
         model.uri = target_model.uri
-        model.metadata["resourceName"] = target_model.resource_name
+        model.metadata["resourceName"] = model_resource_name
 
         path = Path(model.path) / TRAINING_DATASET_INFO
         logging.info(f"Reading training dataset metadata: {path}")

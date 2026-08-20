@@ -73,6 +73,10 @@ def deploy_model(
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
+    def _default_logging_table() -> str:
+        safe_name = re.sub(r"[^a-zA-Z0-9_]", "_", endpoint_name)
+        return "bq://" + f"{project}.logging_{safe_name}" + ".request_response_logging"
+
     def _logging_table_uri(endpoint) -> str:
         gca = getattr(endpoint, "gca_resource", None) or getattr(
             endpoint, "_gca_resource", None
@@ -115,14 +119,16 @@ def deploy_model(
             location=location,
         )
         if enable_request_response_logging:
+            # Vertex requires a non-empty BigQuery URI when logging is enabled.
+            if not bq_logging_destination_table:
+                bq_logging_destination_table = _default_logging_table()
             create_kwargs["enable_request_response_logging"] = True
             create_kwargs[
                 "request_response_logging_sampling_rate"
             ] = logging_sampling_rate
-            if bq_logging_destination_table:
-                create_kwargs[
-                    "request_response_logging_bq_destination_table"
-                ] = bq_logging_destination_table
+            create_kwargs[
+                "request_response_logging_bq_destination_table"
+            ] = bq_logging_destination_table
         endpoint = aip.Endpoint.create(**create_kwargs)
         created_endpoint = True
         logger.info("Created endpoint: %s", endpoint.resource_name)

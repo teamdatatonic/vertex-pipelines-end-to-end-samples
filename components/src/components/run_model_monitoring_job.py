@@ -29,6 +29,7 @@ def run_model_monitoring_job(
     target_bq_table_uri: str,
     job_display_name: str,
     monitored_features: dict,
+    endpoint_id: str = "",
     default_drift_threshold: float = 0.3,
     notification_emails: List[str] = None,
     enable_cloud_logging: bool = True,
@@ -42,15 +43,22 @@ def run_model_monitoring_job(
     detection is an observability side effect and should not hold the pipeline
     before undeploy.
 
+    Endpoint request-response logs are not a feature table (they store JSON
+    payloads). Pass ``endpoint_id`` so the job uses Vertex endpoint logs.
+    ``target_bq_table_uri`` is only used when no endpoint is provided.
+
     Args:
         project: GCP project ID.
         location: GCP region (e.g. europe-west2).
         model_monitor_name: Resource name of an existing ModelMonitor.
         training_dataset_gcs_uri: GCS CSV URI used as the drift baseline.
-        target_bq_table_uri: BigQuery table URI of endpoint request-response
-            logs (``bq://project.dataset.table``).
+        target_bq_table_uri: BigQuery table URI used only when ``endpoint_id``
+            is empty (``bq://project.dataset.table``). Must be a feature table,
+            not a raw request-response logging table.
         job_display_name: Display name prefix for the monitoring job.
         monitored_features: Maps each feature name to its schema data type.
+        endpoint_id: Vertex AI endpoint ID whose request-response logs are the
+            monitoring target. Preferred over ``target_bq_table_uri``.
         default_drift_threshold: Alert threshold applied to every feature.
         notification_emails: Email addresses to notify when an alert fires.
         enable_cloud_logging: Also write alerts to Cloud Logging.
@@ -86,16 +94,23 @@ def run_model_monitoring_job(
             slug = f"m-{slug}"
         return slug[:max_length].rstrip("-")
 
+    endpoint_resource_name = ""
+    if endpoint_id:
+        endpoint_resource_name = (
+            f"projects/{project}/locations/{location}/endpoints/{endpoint_id}"
+        )
+
     if (
         not training_dataset_gcs_uri
-        or not target_bq_table_uri
         or not monitored_features
+        or (not endpoint_resource_name and not target_bq_table_uri)
     ):
         logger.warning(
             "Skipping Model Monitoring v2: training_dataset_gcs_uri, "
-            "target_bq_table_uri, or monitored_features was empty "
-            "(training=%r, target=%r).",
+            "endpoint_id/target_bq_table_uri, or monitored_features was empty "
+            "(training=%r, endpoint_id=%r, target=%r).",
             training_dataset_gcs_uri,
+            endpoint_id,
             target_bq_table_uri,
         )
         return
@@ -103,7 +118,14 @@ def run_model_monitoring_job(
     baseline_dataset = objective.MonitoringInput(
         gcs_uri=training_dataset_gcs_uri, data_format="csv"
     )
-    target_dataset = objective.MonitoringInput(table_uri=target_bq_table_uri)
+    if endpoint_resource_name:
+        logger.info(
+            "Using Vertex endpoint logs as monitoring target: %s",
+            endpoint_resource_name,
+        )
+        target_dataset = objective.MonitoringInput(endpoints=[endpoint_resource_name])
+    else:
+        target_dataset = objective.MonitoringInput(table_uri=target_bq_table_uri)
     feature_drift_spec = objective.DataDriftSpec(
         categorical_metric_type="l_infinity",
         numeric_metric_type="jensen_shannon_divergence",

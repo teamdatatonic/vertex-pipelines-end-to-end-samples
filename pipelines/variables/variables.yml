@@ -5,7 +5,7 @@ vertex_project_prod: "my-gcp-project-prod"
 resource_suffix: "default"
 
 dev:
-  prediction_type: "batch"  # "batch" for batch prediction, "endpoint" for deploy+smoke-test+undeploy
+  prediction_type: "endpoint"  # "batch" for batch prediction, "endpoint" for deploy+smoke-test+undeploy
   endpoint_name: "turbo-prediction-endpoint"
   model_name: "xgb_regressor"
   vertex_location: "europe-west2"
@@ -43,7 +43,7 @@ dev:
   # enable + drift/logging apply to endpoint Model Monitoring v2 only.
   # skew_thresholds are used by batch Model Monitoring v1.
   monitoring:
-    enable: false
+    enable: true
     logging_sampling_rate: 0.3
     default_drift_threshold: 0.3
     skew_thresholds:

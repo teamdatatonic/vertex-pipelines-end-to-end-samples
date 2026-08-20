@@ -83,6 +83,7 @@ def _call_run(**overrides):
         target_bq_table_uri=TARGET_BQ_URI,
         job_display_name="turbo-prediction-endpoint-monitoring",
         monitored_features=MONITORED_FEATURES,
+        endpoint_id="456",
         notification_emails=["a@b.com"],
     )
     kwargs.update(overrides)
@@ -114,6 +115,21 @@ def test_submits_fire_and_forget_monitoring_job(
     preview_sdk_mocks.MonitoringInput.assert_any_call(
         gcs_uri=TRAINING_GCS_URI, data_format="csv"
     )
+    preview_sdk_mocks.MonitoringInput.assert_any_call(
+        endpoints=["projects/test-project/locations/europe-west2/endpoints/456"]
+    )
+
+
+@mock.patch(
+    "google.cloud.aiplatform_v1beta1.services.model_monitoring_service.ModelMonitoringServiceClient.create_model_monitoring_job",  # noqa: E501
+    return_value=mock_created_monitoring_job,
+)
+def test_falls_back_to_table_uri_when_endpoint_id_missing(
+    create_monitoring_job, preview_sdk_mocks
+):
+    _call_run(endpoint_id="")
+
+    create_monitoring_job.assert_called_once()
     preview_sdk_mocks.MonitoringInput.assert_any_call(table_uri=TARGET_BQ_URI)
 
 
@@ -129,8 +145,8 @@ def test_skips_when_training_uri_missing(create_monitoring_job, preview_sdk_mock
 @mock.patch(
     "google.cloud.aiplatform_v1beta1.services.model_monitoring_service.ModelMonitoringServiceClient.create_model_monitoring_job",  # noqa: E501
 )
-def test_skips_when_target_table_missing(create_monitoring_job, preview_sdk_mocks):
-    _call_run(target_bq_table_uri="")
+def test_skips_when_target_missing(create_monitoring_job, preview_sdk_mocks):
+    _call_run(endpoint_id="", target_bq_table_uri="")
 
     create_monitoring_job.assert_not_called()
 

@@ -181,6 +181,7 @@ def pipeline(
                         "training_dataset_gcs_uri"
                     ],
                     target_bq_table_uri=deploy_op.outputs["logging_bq_table"],
+                    endpoint_id=deploy_op.outputs["endpoint_id"],
                     job_display_name=f"{endpoint_name}-monitoring",
                     monitored_features=MONITORED_FEATURES,
                     default_drift_threshold=DEFAULT_DRIFT_THRESHOLD,

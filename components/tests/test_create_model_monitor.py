@@ -84,10 +84,15 @@ def test_creates_monitor_when_none_exists(tmp_path, sdk_mocks):
     result = _call_create(tmp_path, sdk_mocks)
 
     sdk_mocks.vertexai.init.assert_called_once_with(project=PROJECT, location=LOCATION)
-    sdk_mocks.ModelMonitor.list.assert_called_once_with(
+    assert sdk_mocks.ModelMonitor.list.call_count == 2
+    sdk_mocks.ModelMonitor.list.assert_any_call(
         project=PROJECT,
         location=LOCATION,
         filter=f'display_name="{DISPLAY_NAME}"',
+    )
+    sdk_mocks.ModelMonitor.list.assert_any_call(
+        project=PROJECT,
+        location=LOCATION,
     )
     sdk_mocks.ModelMonitor.create.assert_called_once()
     create_kwargs = sdk_mocks.ModelMonitor.create.call_args.kwargs
@@ -117,3 +122,55 @@ def test_unversioned_model_defaults_to_version_one(tmp_path, sdk_mocks):
 
     create_kwargs = sdk_mocks.ModelMonitor.create.call_args.kwargs
     assert create_kwargs["model_version_id"] == "1"
+
+
+def test_unversioned_model_uses_metadata_version_id(tmp_path, sdk_mocks):
+    vertex_model = _make_vertex_model(
+        tmp_path,
+        resource_name="projects/test-project/locations/europe-west2/models/123",
+    )
+    vertex_model.metadata["versionId"] = "33"
+
+    create_model_monitor(
+        vertex_model=vertex_model,
+        project=PROJECT,
+        location=LOCATION,
+        display_name=DISPLAY_NAME,
+        monitored_features=MONITORED_FEATURES,
+    )
+
+    create_kwargs = sdk_mocks.ModelMonitor.create.call_args.kwargs
+    assert create_kwargs["model_version_id"] == "33"
+
+
+def test_does_not_reuse_display_name_monitor_for_other_version(tmp_path, sdk_mocks):
+    other_version = mock.MagicMock()
+    other_version.resource_name = (
+        "projects/test-project/locations/europe-west2/modelMonitors/old-v1"
+    )
+    vertex = other_version.gca_resource.model_monitoring_target.vertex_model
+    vertex.model = "projects/test-project/locations/europe-west2/models/123"
+    vertex.model_version_id = "1"
+    sdk_mocks.ModelMonitor.list.side_effect = [[other_version], []]
+
+    _call_create(tmp_path, sdk_mocks)
+
+    sdk_mocks.ModelMonitor.create.assert_called_once()
+    assert sdk_mocks.ModelMonitor.create.call_args.kwargs["model_version_id"] == "2"
+
+
+def test_reuses_monitor_already_attached_to_model_version(tmp_path, sdk_mocks):
+    existing_for_model = mock.MagicMock()
+    existing_for_model.resource_name = (
+        "projects/test-project/locations/europe-west2/modelMonitors/batch-old"
+    )
+    existing_for_model.display_name = "turbo-template-predict-job-monitoring"
+    vertex = existing_for_model.gca_resource.model_monitoring_target.vertex_model
+    vertex.model = "projects/test-project/locations/europe-west2/models/123"
+    vertex.model_version_id = "2"
+    sdk_mocks.ModelMonitor.list.side_effect = [[], [existing_for_model]]
+
+    result = _call_create(tmp_path, sdk_mocks)
+
+    sdk_mocks.ModelMonitor.create.assert_not_called()
+    assert result[0] == existing_for_model.resource_name

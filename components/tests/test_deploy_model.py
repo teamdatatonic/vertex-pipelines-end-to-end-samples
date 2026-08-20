@@ -210,6 +210,9 @@ def test_creates_endpoint_with_request_response_logging(tmp_path, sdk_mocks):
     create_kwargs = sdk_mocks.Endpoint.create.call_args[1]
     assert create_kwargs["enable_request_response_logging"] is True
     assert create_kwargs["request_response_logging_sampling_rate"] == 0.5
+    assert create_kwargs["request_response_logging_bq_destination_table"] == (
+        "bq://test-project.logging_my_endpoint.request_response_logging"
+    )
     assert result[1] == (
         "bq://test-project.logging_my_endpoint_456.request_response_logging"
     )
@@ -230,6 +233,10 @@ def test_falls_back_to_constructed_logging_uri(tmp_path, sdk_mocks):
 
     result = _call_deploy(tmp_path, enable_request_response_logging=True)
 
+    create_kwargs = sdk_mocks.Endpoint.create.call_args[1]
+    assert create_kwargs["request_response_logging_bq_destination_table"] == (
+        "bq://test-project.logging_my_endpoint.request_response_logging"
+    )
     assert result[1] == (
-        "bq://test-project.logging_my_endpoint_456.request_response_logging"
+        "bq://test-project.logging_my_endpoint.request_response_logging"
     )

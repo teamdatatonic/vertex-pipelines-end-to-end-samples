@@ -32,9 +32,9 @@ def create_model_monitor(
     Create or reuse a Vertex AI Model Monitoring v2 ModelMonitor.
 
     Lists existing monitors by display name and reuses the first match.
-    A new monitor is created only when none exists. The monitor is attached
-    to the model version (not the endpoint), so it survives ephemeral
-    deploy / undeploy cycles.
+    If none match the name, reuses a monitor already attached to the same
+    model version (Vertex allows only one). A new monitor is created only
+    when neither exists.
 
     Args:
         vertex_model: Vertex Model artifact with a resourceName in metadata.
@@ -55,13 +55,43 @@ def create_model_monitor(
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
+    def _monitor_model_target(monitor):
+        gca = getattr(monitor, "gca_resource", None) or getattr(
+            monitor, "_gca_resource", None
+        )
+        sources = [src for src in (gca, monitor) if src is not None]
+        for src in sources:
+            target = getattr(src, "model_monitoring_target", None)
+            vertex = (
+                getattr(target, "vertex_model", None) if target is not None else None
+            )
+            model = getattr(vertex, "model", None) if vertex is not None else None
+            version = (
+                getattr(vertex, "model_version_id", None)
+                if vertex is not None
+                else None
+            )
+            if isinstance(model, str) and model:
+                return model, str(version or "")
+        return "", ""
+
     vertexai.init(project=project, location=location)
 
     resource_name = vertex_model.metadata["resourceName"]
+    metadata_version = vertex_model.metadata.get("versionId")
     if "@" in resource_name:
         model_name, model_version_id = resource_name.rsplit("@", 1)
     else:
-        model_name, model_version_id = resource_name, "1"
+        model_name = resource_name
+        model_version_id = str(metadata_version or "1")
+
+    def _same_model_version(monitor) -> bool:
+        candidate_model, candidate_version = _monitor_model_target(monitor)
+        if not candidate_model:
+            return True
+        return candidate_model == model_name and candidate_version == str(
+            model_version_id
+        )
 
     existing_monitors = ml_monitoring.ModelMonitor.list(
         project=project,
@@ -70,8 +100,32 @@ def create_model_monitor(
     )
     if existing_monitors:
         monitor = existing_monitors[0]
-        logger.info("Reusing existing ModelMonitor: %s", monitor.resource_name)
-        return (monitor.resource_name,)
+        if _same_model_version(monitor):
+            logger.info("Reusing existing ModelMonitor: %s", monitor.resource_name)
+            return (monitor.resource_name,)
+        logger.info(
+            "Monitor %s has display name %s but targets a different model "
+            "version; not reusing.",
+            monitor.resource_name,
+            display_name,
+        )
+
+    # Vertex allows only one ModelMonitor per model version. An older batch
+    # monitor on the same champion must be reused rather than creating a
+    # second one under the endpoint display name.
+    for candidate in ml_monitoring.ModelMonitor.list(
+        project=project,
+        location=location,
+    ):
+        candidate_model, candidate_version = _monitor_model_target(candidate)
+        if candidate_model == model_name and candidate_version == str(model_version_id):
+            logger.info(
+                "Reusing ModelMonitor already attached to this model version: "
+                "%s (display_name=%s)",
+                candidate.resource_name,
+                getattr(candidate, "display_name", ""),
+            )
+            return (candidate.resource_name,)
 
     logger.info("Creating new ModelMonitor: %s", display_name)
     model_monitoring_schema = schema_spec.ModelMonitoringSchema(

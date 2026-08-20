@@ -30,11 +30,11 @@ def test_lookup_model(mock_model, tmp_path):
 
     # Mock attribute and method
     mock_path = str(tmp_path / "model")
-    mock_model.resource_name = "my-model-resource-name"
+    mock_model.resource_name = "projects/p/locations/l/models/123"
     mock_model.uri = mock_path
+    mock_model.version_id = "33"
     mock_model.list.return_value = [mock_model]
 
-    # Invoke the model look up
     found_model_resource_name, _, _ = lookup_model(
         model_name="my-model",
         location="europe-west4",
@@ -43,7 +43,7 @@ def test_lookup_model(mock_model, tmp_path):
         model=Model(uri=mock_path),
     )
 
-    assert found_model_resource_name == "my-model-resource-name"
+    assert found_model_resource_name == "projects/p/locations/l/models/123@33"
 
     # Check the list method was called once with the correct arguments
     mock_model.list.assert_called_once_with(
