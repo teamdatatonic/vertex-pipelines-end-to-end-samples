@@ -68,7 +68,11 @@ storage.googleapis.com \
 Create a bucket to use for the Vertex Pipelines pipeline root.
 
 ```
-gsutil mb -l ${GCP_REGION} -p ${GCP_PROJECT_ID} --pap=enforced gs://${GCP_PROJECT_ID}-pl-root && gsutil ubla set on gs://${GCP_PROJECT_ID}-pl-root
+gcloud storage buckets create gs://${GCP_PROJECT_ID}-pl-root \
+  --project=${GCP_PROJECT_ID} \
+  --location=${GCP_REGION} \
+  --uniform-bucket-level-access \
+  --public-access-prevention
 ```
 
 ### Artifact Registry
@@ -142,9 +146,13 @@ gcloud projects add-iam-policy-binding $GCP_PROJECT_ID --member="serviceAccount:
 The Vertex Pipelines service account requires read/write/list access to the pipeline root bucket:
 
 ```
-gsutil iam ch serviceAccount:vertex-pipelines@${GCP_PROJECT_ID}.iam.gserviceaccount.com:objectAdmin gs://${GCP_PROJECT_ID}-pl-root
+gcloud storage buckets add-iam-policy-binding gs://${GCP_PROJECT_ID}-pl-root \
+  --member=serviceAccount:vertex-pipelines@${GCP_PROJECT_ID}.iam.gserviceaccount.com \
+  --role=roles/storage.objectAdmin
 
-gsutil iam ch serviceAccount:vertex-pipelines@${GCP_PROJECT_ID}.iam.gserviceaccount.com:legacyBucketReader gs://${GCP_PROJECT_ID}-pl-root
+gcloud storage buckets add-iam-policy-binding gs://${GCP_PROJECT_ID}-pl-root \
+  --member=serviceAccount:vertex-pipelines@${GCP_PROJECT_ID}.iam.gserviceaccount.com \
+  --role=roles/storage.legacyBucketReader
 ```
 
 ## Cloud Build setup

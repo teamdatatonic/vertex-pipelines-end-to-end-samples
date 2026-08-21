@@ -74,8 +74,11 @@ Before your CI/CD pipelines can deploy the infrastructure, you will need to set 
 ```bash
 export DEV_PROJECT_ID=my-dev-gcp-project
 export DEV_LOCATION=europe-west2
-gsutil mb -l $DEV_LOCATION -p $DEV_PROJECT_ID --pap=enforced gs://$DEV_PROJECT_ID-tfstate && \
-  gsutil ubla set on gs://$DEV_PROJECT_ID-tfstate
+gcloud storage buckets create gs://$DEV_PROJECT_ID-tfstate \
+  --project=$DEV_PROJECT_ID \
+  --location=$DEV_LOCATION \
+  --uniform-bucket-level-access \
+  --public-access-prevention
 ```
 
 Enable APIs in admin project:
