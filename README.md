@@ -96,7 +96,6 @@ It describes the scheduling of pipelines and how to tear down infrastructure.
 
 ```bash
 pyenv install --skip-existing 3.12.8                  # install Python 3.12.8
-poetry config virtualenvs.prefer-active-python true   # configure Poetry
 make install                                          # install Python dependencies
 cd pipelines && poetry run pre-commit install         # install pre-commit hooks
 cp env.sh.example env.sh
