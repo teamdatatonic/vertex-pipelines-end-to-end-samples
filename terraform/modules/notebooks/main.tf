@@ -130,6 +130,8 @@ resource "google_workbench_instance" "notebooks" {
 
   depends_on = [
     time_sleep.wait_for_notebooks_sa,
+    time_sleep.wait_for_notebook_owner_iam,
+    google_service_account_iam_member.notebook_owners_can_act_as_sa,
     google_compute_route.notebooks_default_internet,
   ]
 }
